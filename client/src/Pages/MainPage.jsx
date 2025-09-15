@@ -1,6 +1,10 @@
+import NavBar from "../Components/NavBar";
+
 export default  function MainPage(){
     return(
         <>
-        hiii how are you
+        <div className="w-full h-screen bg-gray-100">
+        <NavBar/>
+        </div>
         </>)
 }
