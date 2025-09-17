@@ -1,15 +1,25 @@
 import { useForm } from 'react-hook-form'
-export default function Form({ fields, buttonText, onSubmit,buttonClassName }) {
+import { useEffect, useMemo } from 'react';
+
+export default function Form({ fields, buttonText, onSubmit, buttonClassName, initialValue = {} }) {
+    
+    const stableInitialValue = useMemo(() => initialValue || {}, [initialValue]);
+
     const {
         register,
         handleSubmit,
         formState: { errors },
         reset,
-    } = useForm();
+    } = useForm({
+        defaultValues: stableInitialValue
+    });
+
+    useEffect(() => {
+        reset(stableInitialValue);
+    }, []);
 
     const handleFormData = (data) => {
         onSubmit(data);
-        reset();
     };
     return (
         <>

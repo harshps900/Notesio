@@ -9,6 +9,7 @@ export default function Register() {
     const [formError, setFormError] = useState("");
     const handleRegister = async (formData) => {
         const success = await RegisterUser(formData);
+        // console.log(formData)
         if (success) navigate("/login");
     };
     return (

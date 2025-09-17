@@ -1,4 +1,4 @@
-import User from "../Model/userModel.js";
+import User from "../Model/UserModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -18,21 +18,22 @@ export const registerUser = async (req, res) => {
         }
         const hashedPassword = await bcrypt.hash(password, 10)
         const user = await User.create({ name, email, password: hashedPassword })
-        // token creation now 
+        // token creation now
         const token = jwt.sign(
             { id: user._id },
             process.env.SECRET_KEY,
             { expiresIn: '7d' }
         );
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
-        return res.json({ success: true, message: "User registered successfully" });
+        const userResponse = {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            token: token,
+        };
+        return res.json({ success: true, message: "User registered successfully", user: userResponse });
     } catch (error) {
         console.log(error)
+        return res.status(500).json({ success: false, message: "Server error during registration." });
     }
 }
 // login controller
@@ -54,17 +55,17 @@ export const loginUser = async (req, res) => {
         const token = jwt.sign({ id: user._id }, process.env.SECRET_KEY, {
             expiresIn: "7d",
         });
+        const userResponse = {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            token: token,
+        };
 
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
-
-        return res.json({ success: true, message: "User logged in successfully" });
+        return res.json({ success: true, message: "User logged in successfully", user: userResponse });
     } catch (error) {
         console.log(error)
+        return res.status(500).json({ success: false, message: "Server error during login." });
     }
 }
 
@@ -90,4 +91,7 @@ export const logout = async (req, res) => {
         console.error("Logout error:", error);
         res.status(500).json({ message: "Internal Server Error" });
     }
+    // Client-side handles token removal from localStorage.
+    // This endpoint can just confirm the logout action.
+    return res.status(200).json({ success: true, message: "Logged out successfully" });
 };

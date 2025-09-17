@@ -7,10 +7,9 @@ export default function PublicRoute({ children }) {
         return <Loading />;
     }
 
-    if (!isLoggedIn) {
-        return <Navigate to="/Notesio" />;
+    if (isLoggedIn) {
+        return <Navigate to="/Notesio" replace />;
     } else {
-
         return children;
     }
 }

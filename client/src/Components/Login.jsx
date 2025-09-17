@@ -6,13 +6,14 @@ import { useAuth } from "../Context/AuthProvider";
 export default function Login() {
     const [formError, setFormError] = useState('');
     const navigate = useNavigate();
-    const { LoginUser,user } = useAuth()
+    const { LoginUser, user } = useAuth()
     const handleLogin = async (formData) => {
         try {
             const result = await LoginUser(formData);
             if (result.success) {
+                
                 navigate('/Notesio');
-                console.log('Login successful',user)
+                console.log('Login successful', user)
             } else {
                 setFormError("Login failed. Please try again.");
                 navigate('/login');

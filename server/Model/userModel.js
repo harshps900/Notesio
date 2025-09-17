@@ -12,7 +12,12 @@ const Schema = mongoose.Schema({
     password: {
         type: String,
         required: true,
+    },
+    token:{
+        type: String,
+        
     }
+
 })
 const User = mongoose.models.User || mongoose.model("User", Schema);
 export default User;
