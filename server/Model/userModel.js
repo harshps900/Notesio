@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
-const Schema = mongoose.Schema({
+
+const userSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
@@ -8,16 +9,14 @@ const Schema = mongoose.Schema({
         type: String,
         required: true,
         unique: true,
+        lowercase: true,
+        trim: true,
     },
     password: {
         type: String,
         required: true,
     },
-    token:{
-        type: String,
-        
-    }
+});
 
-})
-const User = mongoose.models.User || mongoose.model("User", Schema);
+const User = mongoose.models.User || mongoose.model("User", userSchema);
 export default User;

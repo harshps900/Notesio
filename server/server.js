@@ -22,7 +22,7 @@ const PORT = process.env.PORT || 4000;
 app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
-app.use('/api/auth', authRouter)
+app.use('/api/auth', authRouter);
 
 // Middleware to attach io to each request
 app.use((req, res, next) => {
@@ -37,8 +37,18 @@ app.get('/', (req, res) => {
 })
 
 io.on("connection", (socket) => {
-    console.log("Client connected with socket.io:", socket.id);
+    // console.log("Client connected with socket.io:", socket.id);
     socket.emit("message", "Welcome! You are connected to the WebSocket server.");
+
+    // Join a room based on user ID for personal notifications
+    const userId = socket.handshake.query.userId;
+    if (userId) {
+        socket.join(userId);
+    }
+    socket.on('joinNoteRoom', (noteId) => {
+        socket.join(noteId);
+        console.log(`Socket ${socket.id} joined room ${noteId}`);
+    });
     socket.on("disconnect", () => {
         console.log("Client disconnected:", socket.id);
     });

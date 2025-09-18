@@ -1,90 +1,132 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faClock, faEllipsis } from "@fortawesome/free-solid-svg-icons";
+import { faEllipsisVertical, faPencil, faTrash, faShareNodes, faEye, faClock, faEdit } from "@fortawesome/free-solid-svg-icons";
+import { format, isToday, isYesterday } from 'date-fns';
 
-export default function NoteCard({ note, onEdit, onDelete, onShare }) {
+export default function NoteCard({ note, onEdit, onDelete, onShare, permission = null }) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const menuRef = useRef(null);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setIsMenuOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     const generateColorForId = (id) => {
         const colors = [
-            "bg-yellow-200", "bg-green-300", "bg-blue-200",
-            "bg-pink-300", "bg-purple-200", "bg-indigo-300",
-            "bg-teal-300", "bg-red-300"
+            "bg-yellow-200 border-yellow-200",
+            "bg-green-200 border-green-200",
+            "bg-blue-200 border-blue-200",
+            "bg-pink-200 border-pink-200",
+            "bg-purple-200 border-purple-200",
+            "bg-indigo-200 border-indigo-200",
+            "bg-teal-200 border-teal-200",
+            "bg-red-200 border-red-200",
+            "bg-orange-200 border-orange-200",
+            "bg-cyan-200 border-cyan-200"
         ];
         let total = 0;
-        for (let i = 0; i < id.length; i++) {
-            total += id.charCodeAt(i);
+        for (let i = 0; i < String(id).length; i++) {
+            total += String(id).charCodeAt(i);
         }
         return colors[total % colors.length];
     };
 
     const formatDate = (dateString) => {
-        const options = {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        };
-        return new Date(dateString).toLocaleString(undefined, options);
+        if (!dateString) return "";
+        const date = new Date(dateString);
+
+        if (isToday(date)) return `Today at ${format(date, 'hh:mm a')}`;
+        if (isYesterday(date)) return `Yesterday at ${format(date, 'hh:mm a')}`;
+
+        const diffDays = Math.floor((new Date() - date) / (1000 * 60 * 60 * 24));
+        if (diffDays < 7) return `${format(date, 'EEE')} at ${format(date, 'hh:mm a')}`;
+
+        return format(date, 'MMM d, yyyy');
     };
 
+    const canEdit = permission === 'edit';
+    const canShare = permission === 'edit' || permission === 'view';
+
     return (
-        <div className={`rounded-lg p-4 ${generateColorForId(note._id)} contain-content h-auto shadow-md relative flex flex-col`}>
-            {/* Note content */}
-            <div className="flex-grow overflow-auto ">
-                <h2 className="text-xl font-bold mb-2 font-sans capitalize border-b border-gray-900 pb-2 text-gray-800">{note.title}</h2>
-                <span className="flex gap-1 ">
-                    {/* <FontAwesomeIcon icon={faClock} className="font-light text-gray-500 py-1" /> */}
-                    {/* <p className="text-gray-500 font-light">{formatDate ? `Created at: ${formatDate(note.createdAt)}` : `updated at: ${formatDate(note.updatedAt)}`}</p>
-                    {console.log(note.updatedAt)} */}
-                    {/* <p>Created: {formatDate(note.createdAt)}</p>
-                    {note.updatedAt !== note.createdAt && (
-                        <p>Updated: {formatDate(note.updatedAt)}</p>
-                    )} */}
-                </span>
-                <p className="text-gray-700 font-serif capitalize mt-2  ">{note.description}</p>
-            </div>
-            {/* Ellipsis  */}
-            <div
-                className="absolute top-2 right-2 cursor-pointer text-gray-600 hover:text-gray-900"
-                onClick={() => setIsMenuOpen((prev) => !prev)}
-            >
-                <FontAwesomeIcon icon={faEllipsis} rotation={90} />
-            </div>
-            {/* Dropdown Menu */}
-            {isMenuOpen && (
-                <div className="absolute top-8 right-2 bg-white shadow-lg rounded-md z-10 w-32">
-                    <ul className="text-sm text-gray-700">
-                        <li
-                            onClick={() => { setIsMenuOpen(false); onEdit(note); }}
-                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                        >
-                            Edit
-                        </li>
-                        <li
-                            onClick={() => { setIsMenuOpen(false); onDelete(note._id); }}
-                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                        >
-                            Delete
-                        </li>
-                        <li
-                            onClick={() => { setIsMenuOpen(false); onShare(note); }}
-                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                        >
-                            Share
-                        </li>
-                    </ul>
+        <div className={`rounded-xl p-5 ${generateColorForId(note._id)} border h-full shadow-sm hover:shadow-md transition-all duration-200 flex flex-col relative group`}>
+            {/* Header with title and menu */}
+            <div className="flex justify-between items-start mb-3">
+                <h2 className="text-lg font-semibold text-gray-800 line-clamp-2 pr-6 capitalize">
+                    {note.title}
+                </h2>
+                <div
+                    ref={menuRef}
+                    className="relative"
+                >
+                    <button
+                        className="p-1.5 rounded-full text-gray-500 hover:bg-white/50 hover:text-gray-700 transition-colors"
+                        onClick={() => setIsMenuOpen((prev) => !prev)}
+                        aria-label="Note options"
+                    >
+                        <FontAwesomeIcon icon={faEllipsisVertical} size="sm" />
+                    </button>
+                    {isMenuOpen && (
+                        <div className="absolute top-8 right-0 bg-white shadow-lg rounded-lg z-10 w-40 py-1 border">
+                            <button
+                                onClick={() => { setIsMenuOpen(false); if (canEdit) onEdit(note); }}
+                                disabled={!canEdit}
+                                className={`w-full text-left px-4 py-2 text-sm flex items-center ${canEdit ? 'hover:bg-gray-50 cursor-pointer text-gray-700' : 'opacity-50 cursor-not-allowed text-gray-400'}`}
+                            >
+                                <FontAwesomeIcon icon={faPencil} className="mr-2 text-xs" />
+                                Edit
+                            </button>
+                            <button
+                                onClick={() => { setIsMenuOpen(false); if (canEdit) onDelete(note._id); }}
+                                disabled={!canEdit}
+                                className={`w-full text-left px-4 py-2 text-sm flex items-center ${canEdit ? 'hover:bg-gray-50 cursor-pointer text-gray-700' : 'opacity-50 cursor-not-allowed text-gray-400'}`}
+                            >
+                                <FontAwesomeIcon icon={faTrash} className="mr-2 text-xs" />
+                                Delete
+                            </button>
+                            <button
+                                onClick={() => { setIsMenuOpen(false); if (canShare) onShare(note); }}
+                                disabled={!canShare}
+                                className={`w-full text-left px-4 py-2 text-sm flex items-center ${canShare ? 'hover:bg-gray-50 cursor-pointer text-gray-700' : 'opacity-50 cursor-not-allowed text-gray-400'}`}
+                            >
+                                <FontAwesomeIcon icon={faShareNodes} className="mr-2 text-xs" />
+                                Share
+                            </button>
+                        </div>
+                    )}
                 </div>
-            )}
+            </div>
+
+            {/* Note content */}
+            <div className="flex-grow overflow-hidden mb-4">
+                <p className="text-gray-600 text-sm line-clamp-5 leading-relaxed">
+                    {note.description}
+                </p>
+            </div>
 
             {/* Footer with metadata */}
-            {/* <div className="mt-4 pt-2 border-t border-gray-500 border-opacity-30 text-xs text-gray-600">
-                <p>Created: {formatDate(note.createdAt)}</p>
-                {note.updatedAt !== note.createdAt && (
-                    <p>Updated: {formatDate(note.updatedAt)}</p>
-                )}
-            </div> */}
+            <div className="mt-auto pt-3 border-t border-white/50 flex justify-between items-center">
+                <div className="flex items-center text-xs text-gray-500">
+                    <FontAwesomeIcon icon={faClock} className="mr-1 text-xs" />
+                    <span>{formatDate(note.updatedAt || note.createdAt)}</span>
+                </div>
+
+                {permission === 'view' && (
+                    <div className="flex items-center text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                        <FontAwesomeIcon icon={faEye} className="mr-1 text-xs" />
+                        <span>View only</span>
+                    </div>
+                
+                    )}
+            </div>
         </div>
     );
 }

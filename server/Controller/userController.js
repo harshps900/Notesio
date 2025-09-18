@@ -17,20 +17,20 @@ export const registerUser = async (req, res) => {
             return res.status(400).json({ success: false, message: "User already exists" })
         }
         const hashedPassword = await bcrypt.hash(password, 10)
-        const user = await User.create({ name, email, password: hashedPassword })
+        const newUser = await User.create({ name, email, password: hashedPassword })
         // token creation now
         const token = jwt.sign(
-            { id: user._id },
+            { id: newUser._id },
             process.env.SECRET_KEY,
             { expiresIn: '7d' }
         );
         const userResponse = {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
+            _id: newUser._id,
+            name: newUser.name,
+            email: newUser.email,
             token: token,
         };
-        return res.json({ success: true, message: "User registered successfully", user: userResponse });
+        return res.json({ success: true, message: "User registered successfully", user:userResponse });
     } catch (error) {
         console.log(error)
         return res.status(500).json({ success: false, message: "Server error during registration." });
@@ -70,28 +70,30 @@ export const loginUser = async (req, res) => {
 }
 
 // logout 
-export const logout = async (req, res) => {
+export const logout = (req, res) => {
     try {
-        const token = req.cookies.token;
-        console.log("Logout token:", token);
-
-        if (!token) {
-            return res.status(401).json({ message: "No token found" });
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            // This case should ideally be caught by middleware if it were applied,
+            // but it's good practice to have it here for a public-facing logout endpoint.
+            return res.status(401).json({ success: false, message: 'Unauthorized: No token provided.' });
         }
 
-        // Clear the cookie
-        res.clearCookie("token", {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-        });
-
-        return res.status(200).json({ message: "Logged out successfully" });
+        // In a stateless JWT setup, the server doesn't need to do anything for logout
+        // besides acknowledging the request. The client is responsible for deleting the token.
+        return res.status(200).json({ success: true, message: "Logged out successfully" });
     } catch (error) {
         console.error("Logout error:", error);
-        res.status(500).json({ message: "Internal Server Error" });
+        res.status(500).json({ success: false, message: "Internal Server Error" });
     }
-    // Client-side handles token removal from localStorage.
-    // This endpoint can just confirm the logout action.
-    return res.status(200).json({ success: true, message: "Logged out successfully" });
+};
+
+// Get all users
+export const getAllUsers = async (req, res) => {
+    try {
+        const users = await User.find({}, '_id name email'); 
+        res.status(200).json({ success: true, users });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Server error while fetching users." });
+    }
 };

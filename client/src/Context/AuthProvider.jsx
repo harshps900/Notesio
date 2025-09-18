@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { ToastContainer, toast } from 'react-toastify'
 import axios from "axios";
-import { set } from "react-hook-form";
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
@@ -10,6 +9,7 @@ export default function AuthProvider({ children }) {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isRegistered, setIsRegistered] = useState(false);
     const [user, setUser] = useState({});
+    const [allUsers, setAllUsers] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const showToast = (message, type = "default") => {
@@ -21,6 +21,22 @@ export default function AuthProvider({ children }) {
         return error.response?.data?.message || "An unexpected server error occurred";
     };
 
+    const fetchAllUsers = async () => {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        try {
+            const res = await axios.get("http://localhost:4000/api/auth/users", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            setAllUsers(res.data.users);
+        } catch (error) {
+            console.error("Failed to fetch all users:", error);
+        }
+    };
+
     useEffect(() => {
         const storedUser = localStorage.getItem("user");
         const storedLogin = localStorage.getItem("isLoggedIn");
@@ -29,6 +45,7 @@ export default function AuthProvider({ children }) {
             try {
                 setUser(JSON.parse(storedUser));
                 setIsLoggedIn(true);
+                fetchAllUsers(); // Fetch all users if logged in
             } catch (error) {
                 console.error("Failed to parse user data", error);
                 localStorage.removeItem("user");
@@ -75,6 +92,7 @@ export default function AuthProvider({ children }) {
                 localStorage.setItem("user", JSON.stringify(res.data.user)); 
                 localStorage.setItem("token", res.data.user.token);
                 localStorage.setItem("isLoggedIn", "true");
+                await fetchAllUsers(); // Fetch all users on login
                 console.log(res.data.user)
                 showToast("Logged in successfully!", "success");
                 return { success: true, user: res.data.user };
@@ -89,23 +107,36 @@ export default function AuthProvider({ children }) {
         }
     };
 
-    const logout = async () => {
-        try {
-            await axios.post(`http://localhost:4000/api/auth/logout`, {}, {
-                withCredentials: true,
-            });
-            setIsLoggedIn(false);
-            setUser(null);
-            localStorage.removeItem("user");
-            localStorage.removeItem("isLoggedIn");
-            showToast("Logged out successfully", "info");
-        } catch (err) {
-            console.error(err);
-            showToast("Logout failed", "error");
-        }
-    };
+const logout = async () => {
+    try {
+        const token = localStorage.getItem("token");
 
-    const value = { isLoggedIn, isRegistered, user, loading, showToast, RegisterUser, LoginUser, logout };
+        await axios.post(
+            "http://localhost:4000/api/auth/logout",
+            {}, // no body needed
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                withCredentials: true, // keep if you’re also using cookies
+            }
+        );  
+        console.log(axios)
+        setIsLoggedIn(false);
+        setUser(null);
+        setAllUsers([]);
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
+        localStorage.removeItem("isLoggedIn");
+        showToast("Logged out successfully", "info");
+    } catch (err) {
+        console.error("Logout failed:", err);
+        showToast("Logout failed", "error");
+    }
+};
+
+
+    const value = { isLoggedIn, isRegistered, user, allUsers, loading, showToast, RegisterUser, LoginUser, logout };
 
     return (
         <AuthContext.Provider value={value}>

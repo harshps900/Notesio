@@ -14,35 +14,20 @@ const NoteSchema = new mongoose.Schema({
         ref: "User",
         required: true,
     },
-    sharedWith: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User", // users this note is shared with
+    sharedWith: [{
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        permission: {
+            type: String,
+            enums: ['view', 'edit'],
+            default: 'view'
         }
-    ],
+    }],
     isPublic: {
         type: Boolean,
-        default: false, // for public share links
+        default: false,
     },
-    isPinned: {
-        type: Boolean,
-        default: false, // for sticky/pinned notes UI
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now,
-    },
-    updatedAt: {
-        type: Date,
-        default: Date.now,
-    }
-});
+    
+}, { timestamps: true });
 
-// Update `updatedAt` on edit
-NoteSchema.pre("save", function (next) {
-    this.updatedAt = Date.now();
-    next();
-});
-
-const Notes = mongoose.model("Notes", NoteSchema);
+const Notes = mongoose.models.Notes || mongoose.model("Notes", NoteSchema);
 export default Notes;

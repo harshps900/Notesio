@@ -24,7 +24,7 @@ export default function Form({ fields, buttonText, onSubmit, buttonClassName, in
     return (
         <>
             <div
-                className="w-full   mx-auto shadow-md justify-end   rounded-xl px-2 py-2  ">
+                className="w-full   mx-auto  justify-end    px-2 py-2  ">
                 <form
                     onSubmit={handleSubmit(handleFormData)}
                     className="space-y-2 h-auto">
