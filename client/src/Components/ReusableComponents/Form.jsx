@@ -1,10 +1,11 @@
 import { useForm } from 'react-hook-form'
 import { useEffect, useMemo } from 'react';
+import { useTheme } from '../../Context/ThemeProvider';
 
 export default function Form({ fields, buttonText, onSubmit, buttonClassName, initialValue = {} }) {
-    
-    const stableInitialValue = useMemo(() => initialValue || {}, [initialValue]);
 
+    const stableInitialValue = useMemo(() => initialValue || {}, [initialValue]);
+    const { isDark } = useTheme();
     const {
         register,
         handleSubmit,
@@ -30,7 +31,7 @@ export default function Form({ fields, buttonText, onSubmit, buttonClassName, in
                     className="space-y-2 h-auto">
                     {fields.map((field) => (
                         <div key={field.name} >
-                            <label htmlFor={field.name} className="block text-sm font-medium text-gray-800 mb-1">
+                            <label htmlFor={field.name} className={`block text-sm font-medium    mb-1 ${isDark ? 'text-gray-100' : 'text-gray-800'} }`}>
                                 {field.label}
                             </label>
                             {field.type === "textarea" ? (
@@ -38,8 +39,24 @@ export default function Form({ fields, buttonText, onSubmit, buttonClassName, in
                                     id={field.name}
                                     placeholder={field.placeholder}
                                     rows={field.rows || 4}
-                                    className={`w-full text-gray-800 px-4 py-3 bg-white border rounded-lg 
+                                    className={`w-full  px-4 py-3  border rounded-lg 
+                                        ${isDark ? 'text-gray-100 bg-gray-800' : 'text-gray-800 bg-white border'}
                                                     focus:outline-none focus:ring-2 placeholder-gray-400 
+                                                        ${errors[field.name]
+                                            ? 'border-red-500 focus:ring-red-300'
+                                            : 'border-gray-300 focus:ring-indigo-400'
+                                        }`}
+                                    {...register(field.name, field.validation)}
+                                    aria-invalid={errors[field.name] ? "true" : "false"}
+                                />
+                            ) : field.type === 'file' ? (
+                                <input
+                                    type={field.type}
+                                    id={field.name}
+                                    className={`w-full  px-4 py-3 border  rounded-lg 
+                                            focus:outline-none focus:ring-2 placeholder-gray-400 
+                                            ${isDark ? 'text-gray-100 bg-gray-800' : 'text-gray-800 bg-white border'}
+                                        }
                                                         ${errors[field.name]
                                             ? 'border-red-500 focus:ring-red-300'
                                             : 'border-gray-300 focus:ring-indigo-400'
@@ -53,16 +70,16 @@ export default function Form({ fields, buttonText, onSubmit, buttonClassName, in
                                     id={field.name}
                                     autoComplete="off"
                                     placeholder={field.placeholder}
-                                    className={`w-full text-gray-800 px-4 py-3 bg-white border rounded-lg 
+                                    className={`w-full  px-4 py-3  border rounded-lg 
                                             focus:outline-none focus:ring-2 placeholder-gray-400 
+                                            ${isDark ? 'text-gray-100 bg-gray-800' : 'text-gray-800 bg-white border'}
                                                         ${errors[field.name]
                                             ? 'border-red-500 focus:ring-red-300'
                                             : 'border-gray-300 focus:ring-indigo-400'
                                         }`}
                                     {...register(field.name, field.validation)}
                                     aria-invalid={errors[field.name] ? "true" : "false"}
-                                />
-                            )}
+                                />)}
                             {errors[field.name] && (
                                 <p className="mt-1 text-sm text-red-600">{errors[field.name].message}</p>
                             )}

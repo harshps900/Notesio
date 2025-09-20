@@ -23,6 +23,15 @@ const NoteField = [
                 message: "Message must be at least 5 characters",
             },
         },
-    }
+    },
+    {
+        name: "image",
+        label: "Note Image",
+        type: "file",
+        validation: {
+            
+        },
+    },
+    
 ]
 export default NoteField

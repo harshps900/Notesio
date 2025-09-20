@@ -4,6 +4,9 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotEnv from "dotenv";
 import { Server } from "socket.io";
+import fs from "fs";
+import { fileURLToPath } from 'url';
+import path from "path";
 dotEnv.config();
 import data from './Config/data.js';
 import authRouter from "./Routes/authRouter.js";
@@ -17,11 +20,24 @@ const io = new Server(server, {
     }
 });
 data()
+
+// Ensure the uploads directory exists
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir);
+}
+
 const PORT = process.env.PORT || 4000;
 
 app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
+
+// Serve static files from the "uploads" directory
+app.use('/uploads', express.static(uploadsDir));
+
 app.use('/api/auth', authRouter);
 
 // Middleware to attach io to each request

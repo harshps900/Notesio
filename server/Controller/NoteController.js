@@ -1,16 +1,30 @@
 import Notes from '../Model/NoteModel.js'
 import User from '../Model/UserModel.js';
-import mongoose from "mongoose";
+import fs from 'fs';
+import path from 'path';
+import mongoose from 'mongoose';
 
 export const createNote = async (req, res) => {
+    const { title, description, color, priority, status } = req.body;
+    const imageUrl = req.file ? `/uploads/${req.file.filename}` : '';
 
-    const { title, description } = req.body
-    if (!title || !description) {
+    if (!title) {
         return res.status(400).json({ success: false, message: "All fields are required" })
     }
     try {
-        const note = await Notes.create({ title, description, userId: req.user.id })
-        req.io.emit("newNote", note)
+        const note = await Notes.create({
+            title,
+            description,
+            color: color || null, // Ensure color is saved, even if null
+            priority: priority || 0, // Ensure priority has a default
+            status: status || 'todo',
+            imageUrl,
+            userId: req.user.id
+        });
+        // Emit to all clients except the sender
+        if (req.io && req.user.socketId) {
+            req.io.except(req.user.socketId).emit("noteCreated", note);
+        }
         return res.status(201).json({ success: true, message: "Note created successfully", note })
     } catch (error) {
         console.log(error)
@@ -22,52 +36,64 @@ export const allNotes = async (req, res) => {
         const userId = req.user.id;
         const notes = await Notes.find({
             $or: [
-                { userId: userId },
+                // Notes owned by the user that are not deleted
+                { userId: userId, isDeleted: { $ne: true } },
                 { 'sharedWith.user': userId }
             ]
         })
             .populate('userId', 'name')
             .populate('sharedWith.user', 'name email')
+            .populate('lastEditedBy', 'name')
             .sort({ updatedAt: -1 });
-
         return res.status(200).json({ success: true, note: notes, });
     } catch (error) {
         return res.status(500).json({ success: false, message: "No notes found." });
-
     }
 }
 
 export const editNote = async (req, res) => {
     const { id } = req.params;
-    const { title, description } = req.body;
+    const { title, description, color, priority, status } = req.body;
+    const updateData = { lastEditedBy: req.user.id };
 
+    // Only add fields to updateData if they are provided in the request
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (color !== undefined) updateData.color = color;
+    if (priority !== undefined) updateData.priority = priority;
+    if (status !== undefined) updateData.status = status;
     try {
         const note = await Notes.findById(id);
-
         if (!note) {
             return res.status(404).json({ success: false, message: "Note not found." });
         }
-
         const isOwner = note.userId.toString() === req.user.id;
         const isSharedWith = note.sharedWith.some(
             share => share.user && share.user.toString() === req.user.id && share.permission === 'edit'
         );
-
         if (!isOwner && !isSharedWith) {
             return res.status(403).json({ success: false, message: "You are not authorized to edit this note." });
+        }
+        if (req.file) {
+
+            if (note.imageUrl) {
+                const oldImagePath = path.join(path.resolve(), note.imageUrl);
+                if (fs.existsSync(oldImagePath)) {
+                    fs.unlinkSync(oldImagePath);
+                }
+            }
+            updateData.imageUrl = `/uploads/${req.file.filename}`;
         }
 
         const updatedNote = await Notes.findByIdAndUpdate(
             id,
-            { title, description },
+            updateData,
             { new: true }
         ).populate("userId", "name")
-            .populate("sharedWith.user", "name email");
+            .populate("sharedWith.user", "name email")
+            .populate('lastEditedBy', 'name');
 
-        
         const noteToEmit = updatedNote.toObject();
-
-        
         if (req.io) req.io.to(id).emit("noteUpdated", noteToEmit);
 
         return res.status(200).json({
@@ -83,7 +109,7 @@ export const editNote = async (req, res) => {
 };
 
 // Delete Note
-export const deleteNote = async (req, res) => {
+export const SoftDeleteNote = async (req, res) => {
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -106,12 +132,12 @@ export const deleteNote = async (req, res) => {
             return res.status(403).json({ success: false, message: "You are not authorized to delete this note." });
         }
 
-        await Notes.findByIdAndDelete(id);
+        await Notes.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
 
         // only emit if req.io exists
         if (req.io) req.io.to(id).emit("noteDeleted", id);
 
-        return res.status(200).json({ success: true, message: "Note deleted successfully" });
+        return res.status(200).json({ success: true, message: "Note moved to trash successfully" });
     } catch (error) {
         console.error("Error deleting note:", error);
         return res.status(500).json({ success: false, message: "Server error while deleting note." });
@@ -156,10 +182,10 @@ export const shareNote = async (req, res) => {
         );
 
         if (alreadyShared) {
-            return res.status(400).json({ success: false, message: "Note is already shared with this user." });
+            return res.status(400).json({ success: true, message: "Note is already shared with this user." });
         }
 
-        note.sharedWith.push({ user: userToShareWith._id, permission });
+        note.sharedWith.push({ user: userToShareWith._id, permission, });
         await note.save();
 
         const populatedNote = await Notes.findById(note._id)
@@ -177,5 +203,167 @@ export const shareNote = async (req, res) => {
     } catch (error) {
         console.error("Error sharing note:", error);
         return res.status(500).json({ success: false, message: "Server error while sharing note." });
+    }
+};
+
+// Get soft-deleted notes for the user
+export const getTrashNotes = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const trashNotes = await Notes.find({
+            isDeleted: true,
+            $or: [
+                { userId: userId }, // Notes owned by the user
+                { 'sharedWith.user': userId } // Notes shared with the user
+            ]
+        }).populate('userId', 'name')
+            .sort({ updatedAt: -1 });
+
+        return res.status(200).json({ success: true, note: trashNotes });
+    } catch (error) {
+        console.error("Error fetching trash notes:", error);
+        return res.status(500).json({ success: false, message: "Server error while fetching trash." });
+    }
+};
+// permanent delete the note
+export const deletePermanently = async (req, res) => {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ success: false, message: "Invalid note ID" });
+    }
+
+    try {
+        const note = await Notes.findById(id);
+        if (!note) {
+            return res.status(404).json({ success: false, message: "Note not found." });
+        }
+
+        const isOwner = note.userId.toString() === req.user.id;
+        const isSharedWith = note.sharedWith.some(
+            (share) => share.user && share.user.toString() === req.user.id && share.permission === "edit"
+        );
+
+        if (!isOwner && !isSharedWith) {
+            return res.status(403).json({ success: false, message: "You are not authorized to delete this note." });
+        }
+
+        await Notes.findByIdAndDelete(id);
+
+        // only emit if req.io exists
+        if (req.io) req.io.to(id).emit("noteDeleted", id);
+
+        return res.status(200).json({ success: true, message: "Note deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting note:", error);
+        return res.status(500).json({ success: false, message: "Server error while deleting note." });
+    }
+};
+
+// Restore a soft-deleted note
+export const restoreNote = async (req, res) => {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ success: false, message: "Invalid note ID" });
+    }
+
+    try {
+        const note = await Notes.findById(id);
+        if (!note) {
+            return res.status(404).json({ success: false, message: "Note not found in trash." });
+        }
+
+        const isOwner = note.userId.toString() === req.user.id;
+        const isSharedWith = note.sharedWith.some(
+            (share) => share.user && share.user.toString() === req.user.id && share.permission === "edit"
+        );
+
+
+        if (!isOwner && !isSharedWith) {
+            return res.status(403).json({ success: false, message: "You are not authorized to restore this note." });
+        }
+
+        await Notes.findByIdAndUpdate(id, { isDeleted: false }, { new: true });
+        return res.status(200).json({ success: true, message: "Note restored successfully" });
+    } catch (error) {
+        console.error("Error restoring note:", error);
+        return res.status(500).json({ success: false, message: "Server error while restoring note." });
+    }
+};
+
+// Toggle favourite status of a note
+export const toggleFavourite = async (req, res) => {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ success: false, message: "Invalid note ID" });
+    }
+
+    try {
+        const note = await Notes.findById(id);
+        if (!note) {
+            return res.status(404).json({ success: false, message: "Note not found." });
+        }
+
+        const isOwner = note.userId.toString() === req.user.id;
+        const isSharedWith = note.sharedWith.some(
+            (share) => share.user && share.user.toString() === req.user.id && share.permission === "edit"
+        );
+
+        if (!isOwner && !isSharedWith) {
+            return res.status(403).json({ success: false, message: "You are not authorized to modify this note." });
+        }
+
+        const updatedNote = await Notes.findByIdAndUpdate(id, { isFavourite: !note.isFavourite }, { new: true });
+
+        return res.status(200).json({ success: true, message: "Note favourite status updated", note: updatedNote });
+    } catch (error) {
+        console.error("Error toggling favourite:", error);
+        return res.status(500).json({ success: false, message: "Server error while updating note." });
+    }
+};
+// delete all
+export const deleteAllNotes = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        
+        const result = await Notes.deleteMany({
+            userId: userId,
+            isDeleted: true
+        });
+
+        return res.status(200).json({ success: true, message: `All trash notes deleted successfully. Count: ${result.deletedCount}` });
+    } catch (error) {
+        console.error("Error deleting all notes:", error);
+        return res.status(500).json({ success: false, message: "Server error while deleting all notes." });
+    }
+}
+
+// Update priorities of multiple notes
+export const updateNotePriorities = async (req, res) => {
+    const { updates } = req.body; // Expects an array of { id: string, priority: number }
+    const userId = req.user.id;
+
+    if (!Array.isArray(updates)) {
+        return res.status(400).json({ success: false, message: "Invalid input: 'updates' must be an array." });
+    }
+
+    try {
+        const bulkOps = updates.map(update => ({
+            updateOne: {
+                filter: { _id: update.id, userId: userId }, // Ensure user owns the note
+                update: { $set: { priority: update.priority } }
+            }
+        }));
+
+        await Notes.bulkWrite(bulkOps);
+
+        return res.status(200).json({ success: true, message: "Note priorities updated successfully." });
+    } catch (error) {
+        console.error("Error updating note priorities:", error);
+        return res.status(500).json({ success: false, message: "Server error while updating priorities." });
     }
 };

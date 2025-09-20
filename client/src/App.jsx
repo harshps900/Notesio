@@ -5,6 +5,7 @@ import Login from './Components/Login'
 import Register from './Components/Register'
 import ProtectedRoute from './Components/ProtectedRoute'
 import PublicRoute from './Components/PublicRoute'
+import Trash from './Components/Trash'
 function App() {
 
   return (

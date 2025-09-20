@@ -1,13 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEllipsisVertical, faPencil, faTrash, faShareNodes, faEye, faClock, faEdit } from "@fortawesome/free-solid-svg-icons";
+import { faEllipsisVertical, faPencil, faTrash, faShareNodes, faEye, faClock, faStar } from "@fortawesome/free-solid-svg-icons";
+import { useTheme } from "../Context/ThemeProvider";
 import { format, isToday, isYesterday } from 'date-fns';
+import { HexColorPicker } from "react-colorful";
 
-export default function NoteCard({ note, onEdit, onDelete, onShare, permission = null }) {
+export default function NoteCard({ note, onEdit, onDelete, onShare, onToggleFavourite, onColorChange, permission = null, noteDetail }) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
     const menuRef = useRef(null);
+    const { isDark } = useTheme();
 
-    // Close menu when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -22,16 +25,15 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, permission =
 
     const generateColorForId = (id) => {
         const colors = [
-            "bg-yellow-200 border-yellow-200",
-            "bg-green-200 border-green-200",
-            "bg-blue-200 border-blue-200",
-            "bg-pink-200 border-pink-200",
-            "bg-purple-200 border-purple-200",
-            "bg-indigo-200 border-indigo-200",
-            "bg-teal-200 border-teal-200",
-            "bg-red-200 border-red-200",
-            "bg-orange-200 border-orange-200",
-            "bg-cyan-200 border-cyan-200"
+            isDark ? '#4A5568' : '#E2E8F0', // gray
+            isDark ? '#9B2C2C' : '#FEB2B2', // red
+            isDark ? '#975A16' : '#FBD38D', // orange
+            isDark ? '#B7791F' : '#F6E05E', // yellow
+            isDark ? '#2F855A' : '#9AE6B4', // green
+            isDark ? '#2C7A7B' : '#81E6D9', // teal
+            isDark ? '#2B6CB0' : '#90CDF4', // blue
+            isDark ? '#553C9A' : '#B794F4', // purple
+            isDark ? '#97266D' : '#FBB6CE', // pink
         ];
         let total = 0;
         for (let i = 0; i < String(id).length; i++) {
@@ -56,76 +58,146 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, permission =
     const canEdit = permission === 'edit';
     const canShare = permission === 'edit' || permission === 'view';
 
+    // Determines if a hex color is dark
+    const isColorDark = (hexColor) => {
+        if (!hexColor) return false;
+        const hex = hexColor.replace('#', '');
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        return (0.299 * r + 0.587 * g + 0.114 * b) < 128;
+    };
+
+    const noteColor = note.color || generateColorForId(note._id);
+    const textColorClass = isColorDark(noteColor) ? 'text-gray-100' : 'text-gray-800';
+
+
     return (
-        <div className={`rounded-xl p-5 ${generateColorForId(note._id)} border h-full shadow-sm hover:shadow-md transition-all duration-200 flex flex-col relative group`}>
+        <div
+            className={`rounded-xl p-5 border h-full shadow-sm hover:shadow-md transition-all duration-200 flex flex-col relative group`}
+            style={{
+                backgroundColor: noteColor,
+                borderColor: isDark ? '#4A5568' : '#E2E8F0'
+            }}
+        >
             {/* Header with title and menu */}
             <div className="flex justify-between items-start mb-3">
-                <h2 className="text-lg font-semibold text-gray-800 line-clamp-2 pr-6 capitalize">
+                <h2 className={`text-lg font-semibold line-clamp-2 pr-6 capitalize ${textColorClass}`}>
                     {note.title}
                 </h2>
                 <div
                     ref={menuRef}
-                    className="relative"
+                    className="relative flex "
                 >
+                    {/* Custom color picker */}
+                    {canEdit && (
+                        <div className="relative mr-2">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsColorPickerOpen(prev => !prev);
+                                }}
+                                className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-black/10 transition-colors"
+                                title="Change note color"
+                            >
+                                <div className="flex cursor-pointer relative">
+                                    <div className="w-5  h-5 rounded-full bg-red-400  ">
+                                        <div className="w-4 h-4 flex items-center justify-center rounded-full bg-gradient-to-bl from-green-300 to-red-300  ml-0.5 mt-0.5  ">
+                                            <div className="w-3  h-3 rounded-full flex items-center justify-center bg-gradient-to-bl from-indigo-300 to-green-300     "></div>
+                                        </div>
+                                    </div>
+
+
+                                </div>
+                            </button>
+                            {isColorPickerOpen && (
+                                <div
+                                    className="absolute top-full right-0 mt-2 z-20 p-2 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <HexColorPicker
+                                        color={note.color || generateColorForId(note._id)}
+                                        onChange={(newColor) => onColorChange(note._id, newColor)}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    )}
                     <button
-                        className="p-1.5 rounded-full text-gray-500 hover:bg-white/50 hover:text-gray-700 transition-colors"
+                        className={`p-1.5 rounded-full  ${isDark ? 'text-gray-100 hover:bg-white/20 hover:text-gray-100' : 'text-gray-500 hover:bg-white/50 hover:text-gray-700'} transition-colors`}
                         onClick={() => setIsMenuOpen((prev) => !prev)}
                         aria-label="Note options"
                     >
                         <FontAwesomeIcon icon={faEllipsisVertical} size="sm" />
                     </button>
                     {isMenuOpen && (
-                        <div className="absolute top-8 right-0 bg-white shadow-lg rounded-lg z-10 w-40 py-1 border">
+                        <div className={`absolute top-8 right-0  shadow-lg rounded-lg z-10 w-40 py-1 border ${isDark ? 'bg-gray-800  text-gray-100 border-gray-500' : 'bg-white text-gray-800 border-gray-50'}`}>
                             <button
-                                onClick={() => { setIsMenuOpen(false); if (canEdit) onEdit(note); }}
+                                onClick={(e) => { setIsMenuOpen(false); if (canEdit) onEdit(e, note); }}
                                 disabled={!canEdit}
-                                className={`w-full text-left px-4 py-2 text-sm flex items-center ${canEdit ? 'hover:bg-gray-50 cursor-pointer text-gray-700' : 'opacity-50 cursor-not-allowed text-gray-400'}`}
+                                className={`w-full text-left px-4 py-2 text-sm flex items-center ${canEdit ? `${isDark ? 'hover:bg-gray-700 cursor-pointer text-gray-100' : 'hover:bg-gray-50 cursor-pointer text-gray-700'}` : `${isDark ? 'opacity-50 cursor-not-allowed text-gray-200' : 'opacity-50 cursor-not-allowed text-gray-400'}`}`}
                             >
                                 <FontAwesomeIcon icon={faPencil} className="mr-2 text-xs" />
                                 Edit
                             </button>
                             <button
-                                onClick={() => { setIsMenuOpen(false); if (canEdit) onDelete(note._id); }}
+                                onClick={(e) => { setIsMenuOpen(false); if (canEdit) onDelete(e, note._id); }}
                                 disabled={!canEdit}
-                                className={`w-full text-left px-4 py-2 text-sm flex items-center ${canEdit ? 'hover:bg-gray-50 cursor-pointer text-gray-700' : 'opacity-50 cursor-not-allowed text-gray-400'}`}
+                                className={`w-full text-left px-4 py-2 text-sm flex items-center${canEdit ? `${isDark ? 'hover:bg-gray-700 cursor-pointer text-gray-100' : 'hover:bg-gray-50 cursor-pointer text-gray-700'}` : `${isDark ? 'opacity-50 cursor-not-allowed text-gray-200' : 'opacity-50 cursor-not-allowed text-gray-400'}`}`}
                             >
                                 <FontAwesomeIcon icon={faTrash} className="mr-2 text-xs" />
                                 Delete
                             </button>
                             <button
-                                onClick={() => { setIsMenuOpen(false); if (canShare) onShare(note); }}
+                                onClick={(e) => { setIsMenuOpen(false); if (canShare) onShare(e, note); }}
                                 disabled={!canShare}
-                                className={`w-full text-left px-4 py-2 text-sm flex items-center ${canShare ? 'hover:bg-gray-50 cursor-pointer text-gray-700' : 'opacity-50 cursor-not-allowed text-gray-400'}`}
+                                className={`w-full text-left px-4 py-2 text-sm flex items-center ${canEdit ? `${isDark ? 'hover:bg-gray-700 cursor-pointer text-gray-100' : 'hover:bg-gray-50 cursor-pointer text-gray-700'}` : `${isDark ? 'opacity-50 cursor-not-allowed text-gray-200' : 'opacity-50 cursor-not-allowed text-gray-400'}`}`}
                             >
                                 <FontAwesomeIcon icon={faShareNodes} className="mr-2 text-xs" />
                                 Share
                             </button>
+                            <button onClick={(e) => onToggleFavourite(e, note._id, !note.isFavourite)} className={`w-full text-left mr-2 px-4 py-2 text-sm flex items-center  cursor-pointer${isDark ? 'text-gray-100 hover:bg-gray-700' : 'text-gray-800 hover:bg-gray-50'} `}>
+
+                                <FontAwesomeIcon icon={faStar} className="mr-2 text-xs" />{note.isFavourite ? 'unfavourite' : 'Favourite'}</button>
                         </div>
                     )}
                 </div>
             </div>
-
             {/* Note content */}
             <div className="flex-grow overflow-hidden mb-4">
-                <p className="text-gray-600 text-sm line-clamp-5 leading-relaxed">
+                <p onClick={noteDetail} className={`text-sm line-clamp-1 leading-relaxed ${textColorClass}`}>
                     {note.description}
                 </p>
+                {/* Image */}
+                {note.imageUrl && (
+                    <img src={`http://localhost:4000${note.imageUrl}`} alt={note.title} className=" hidden my-2 rounded-lg object-cover max-h-48 w-full" />
+                )}
             </div>
-
             {/* Footer with metadata */}
             <div className="mt-auto pt-3 border-t border-white/50 flex justify-between items-center">
-                <div className="flex items-center text-xs text-gray-500">
+                <div className={`flex items-center text-xs ${isColorDark(noteColor) ? 'text-gray-200' : 'text-gray-500'}`}>
                     <FontAwesomeIcon icon={faClock} className="mr-1 text-xs" />
                     <span>{formatDate(note.updatedAt || note.createdAt)}</span>
+                    {note.lastEditedBy && note.lastEditedBy.name && (
+                        <span className="ml-2 italic">
+                            (edited by {note.lastEditedBy.name})
+                        </span>
+                    )}
                 </div>
 
+                <button className=" hover:text-yellow-500 transition-colors">
+                    <FontAwesomeIcon
+                        icon={faStar}
+                        className={`${note.isFavourite ? `${isDark ? 'text-yellow-600' : 'text-yellow-500'}` : `${isDark ? 'text-gray-200' : 'text-gray-00'}`}`}
+                    />
+                </button>
                 {permission === 'view' && (
                     <div className="flex items-center text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
                         <FontAwesomeIcon icon={faEye} className="mr-1 text-xs" />
                         <span>View only</span>
                     </div>
-                
-                    )}
+
+                )}
             </div>
         </div>
     );
