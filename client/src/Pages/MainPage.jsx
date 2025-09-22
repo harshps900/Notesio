@@ -1,39 +1,42 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import axios from "axios";
-import NavBar from "../Components/NavBar";
-import NoteCard from "../Components/NoteCard";
-import Form from "../Components/ReusableComponents/Form";
-import NoteField from "../Components/ReusableComponents/NoteField";
 import { useAuth } from "../Context/AuthProvider";
 import { io } from "socket.io-client";
+import { useTheme } from "../Context/ThemeProvider";
+import {DndContext,} from "@dnd-kit/core";
+import axios from "axios";
+import NavBar from "../Components/NavBar";
+import Form from "../Components/ReusableComponents/Form";
+import NoteField from "../Components/ReusableComponents/NoteField";
 import swal from "sweetalert";
 import SideBar from "../Components/SideBar";
 import Trash from "../Components/Trash";
 import FavNotes from '../Components/FavNotes'
 import noteTa from '../assets/noteTa.png'
 import DisplayNotes from "../Components/DisplayNotes";
-import { useTheme } from "../Context/ThemeProvider";
-import NoteColumn from "../Components/NoteColumn";
+import NoteColumn from '../Components/NoteColumn'
+
 export default function MainPage() {
+    // note states 
     const [notes, setNotes] = useState([]);
-    const [isNoteOpen, setIsNoteOpen] = useState(false);
+    const [currentNote, setCurrentNote] = useState(null);
+    const [filteredNotes, setFilteredNotes] = useState([]);
+    const [noteDetail, setNoteDetail] = useState(null); // State for the detail view modal
+    // share state
     const [shareModal, setShareModal] = useState({ open: false, note: null });
     const [shareEmail, setShareEmail] = useState("");
     const [sharePermission, setSharePermission] = useState("view");
-    const [currentNote, setCurrentNote] = useState(null);
-    const { showToast, user } = useAuth();
-    const [searchterm, setSearchTerm] = useState("");
-    const [filteredNotes, setFilteredNotes] = useState([]);
+    // open and close states
     const [isHomeCLick, setIsHomeClick] = useState(false);
+    const [isNoteOpen, setIsNoteOpen] = useState(false);
     const [isFavouritesClick, setIsFavouritesClick] = useState(false);
     const [isTrashClick, setIsTrashClick] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [noteDetail, setNoteDetail] = useState(null); // State for the detail view modal
+    // other states
     const { isDark } = useTheme();
-    const [color, setColor] = useState(false)
+    const { showToast, user } = useAuth();
+    const [searchterm, setSearchTerm] = useState("");
     // keep socket ref so it's stable across renders
     const socketRef = useRef(null);
-
 
     const favouriteNotes = useMemo(
         () => filteredNotes.filter(note => note.isFavourite),
@@ -46,24 +49,29 @@ export default function MainPage() {
             setCurrentNote(null);
         }
     };
+
     const toggleHome = () => {
         setIsHomeClick(true);
         setIsFavouritesClick(false);
         setIsTrashClick(false);
     }
+
     const toggleFavourites = () => {
         setIsFavouritesClick(true);
         setIsHomeClick(false);
         setIsTrashClick(false);
     }
+
     const toggleTrash = () => {
         setIsTrashClick(true);
         setIsFavouritesClick(false);
         setIsHomeClick(false);
     }
+
     const toggleMenu = () => {
         setIsMenuOpen(prev => !prev);
     }
+
     useEffect(() => {
         setIsHomeClick(true);
     }, [])
@@ -101,6 +109,7 @@ export default function MainPage() {
         const data = new FormData();
         data.append("title", formData.title);
         data.append("description", formData.description);
+        data.append("tags",formData.tags)
         if (formData.color) data.append("color", formData.color);
         if (formData.image && formData.image[0]) {
             data.append("image", formData.image[0]);
@@ -119,7 +128,6 @@ export default function MainPage() {
             if (res.data.success) {
                 showToast("Note created successfully", "success");
                 setIsNoteOpen(false);
-                // add locally (server should also emit via socket)
                 setNotes(prev => [res.data.note, ...prev]);
             }
         } catch (error) {
@@ -130,13 +138,11 @@ export default function MainPage() {
 
     // Generic update function
     const updateNote = async (noteId, updateData) => {
-        // Optimistic UI update
         setNotes(prev => prev.map(n => n._id === noteId ? { ...n, ...updateData } : n));
-
         try {
-            // The backend's editNote can handle partial updates with JSON
-            const res = await axios.put(
-                `http://localhost:4000/api/notes/edit/${noteId}`,
+            console.log(`Updating note ${noteId} with data:`, updateData);
+            const res = await axios.patch(
+                `http://localhost:4000/api/notes/update-details/${noteId}`,
                 updateData,
                 {
                     headers: {
@@ -145,7 +151,6 @@ export default function MainPage() {
                     },
                 }
             );
-
             if (res.data.success) {
                 // Replace with the final version from the server
                 setNotes(prev => prev.map(n => n._id === res.data.note._id ? res.data.note : n));
@@ -160,7 +165,7 @@ export default function MainPage() {
     };
 
     // update
-    const handleUpdateNote = async (formData) => {
+    const handleUpdateNote = async (formData, noteId) => {
         const data = new FormData();
         data.append("title", formData.title);
         data.append("description", formData.description || ''); // Ensure description is not undefined
@@ -170,7 +175,7 @@ export default function MainPage() {
         }
         try {
             const res = await axios.put(
-                `http://localhost:4000/api/notes/edit/${currentNote._id}`,
+                `http://localhost:4000/api/notes/edit/${noteId}`,
                 data,
                 {
                     headers: {
@@ -192,6 +197,35 @@ export default function MainPage() {
         }
     };
 
+    // update note status
+    const handleNoteStatusChange = async (noteId, newStatus) => {
+        // Optimistic UI update
+        setNotes(prev => prev.map(n => n._id === noteId ? { ...n, status: newStatus } : n));
+
+        try {
+            await axios.patch(
+                `http://localhost:4000/api/notes/update-details/${noteId}`,
+                { status: newStatus },
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                }
+            );
+            if (newStatus === 'progress') {
+                showToast("Note status Changed to Progress.", "success");
+            }
+            if (newStatus === 'done') {
+                showToast("Note status Changed to Done.", "success");
+            }
+        } catch (error) {
+            console.error("Failed to update note status:", error);
+            showToast("Failed to update note status.", "error");
+            fetchNotes();
+        }
+    };
+
     // delete
     const onDelete = async (id) => {
         try {
@@ -205,7 +239,7 @@ export default function MainPage() {
                 if (!willDelete) return; {
                     const res = await axios.post(
                         `http://localhost:4000/api/notes/SoftDelete/${id}`,
-                        {}, // Add empty body for POST request
+                        {}, 
                         {
                             headers: {
                                 "Content-Type": "application/json",
@@ -214,6 +248,7 @@ export default function MainPage() {
                         }
                     );
                     if (res.data.success) {
+                        console.log(res.data);
                         showToast("Note Deleted successfully and Moved to Trash", "info");
                         setNotes(prev => prev.filter(n => n._id !== id));
                     }
@@ -234,7 +269,7 @@ export default function MainPage() {
 
     // handle color change
     const handleColorChange = async (noteId, newColor) => {
-        // Now uses the generic updateNote function
+        
         await updateNote(noteId, { color: newColor });
     };
 
@@ -272,7 +307,7 @@ export default function MainPage() {
         if (!user?._id) return;
         // create socket and store in ref
         const socket = io("http://localhost:4000", {
-            auth: { token: localStorage.getItem("token") }, // use auth instead of query
+            auth: { token: localStorage.getItem("token") }, 
         });
         socketRef.current = socket;
         const handleConnect = () => console.log("Connected to server via socket.io");
@@ -289,6 +324,9 @@ export default function MainPage() {
             showToast(`A note has been shared with you: "${sharedNote.title}"`, "info");
             setNotes((prevNotes) => [sharedNote, ...prevNotes]);
         };
+
+        socket.emit("joinUserRoom", user._id); // Join user-specific room
+
         socket.on("connect", handleConnect);
         socket.on("noteCreated", handleNoteCreated);
         socket.on("noteUpdated", handleNoteUpdated);
@@ -335,8 +373,29 @@ export default function MainPage() {
         }
     };
 
+    const noteCol = [
+        { id: 'onStart', title: 'onStart' },
+        { id: 'progress', title: 'Progress' },
+        { id: 'done', title: 'Done' }
+    ]
+
+    const handleDragEnd = (event) => {
+        const { active, over } = event
+        if (!over) return
+        const draggedItem = active.id; 
+        const noteId = typeof draggedItem === 'object' && draggedItem?._id ? draggedItem._id : draggedItem;
+        const newStatus = over.id;
+
+        const note = notes.find(n => n._id === noteId);
+
+        if (note && note.status !== newStatus) {
+            handleNoteStatusChange(noteId, newStatus);
+        }
+    }
+
+
     return (
-        <div className={`w-full fixed h-screen flex flex-col ${isDark ? ' bg-gray-800' : 'bg-gray-100'}`}>
+        <div className={`w-full  md:fixed h-screen flex flex-col ${isDark ? ' bg-gray-800' : 'bg-white'}`}>
             <NavBar searchterm={searchterm} setSearchTerm={setSearchTerm} menu={toggleMenu} />
             <div className="flex flex-1  ">
                 {/* sidebar */}
@@ -350,71 +409,45 @@ export default function MainPage() {
                 <div className=" flex-1 overflow-y-auto ">
                     {isHomeCLick && (
                         <>
-                            {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ml-2 mt-4  md:gap-6">
-                                <NoteColumn
-                                    notes={filteredNotes}
-                                    onEdit={(e) => { e.stopPropagation(); perm === 'edit' && onEdit(note); }}
-                                    permission={perm}
-                                    noteDetail={() => setNoteDetail(note)}
-                                    onDelete={(e) => { e.stopPropagation(); perm === 'edit' && onDelete(note._id); }}
-                                    onToggleFavourite={(e, id, isFav) => { e.stopPropagation(); onToggleFavourite(id, isFav); }}
-                                    onShare={(e, n) => { e.stopPropagation(); setShareModal({ open: true, note: n }); }}
-                                    onColorChange={handleColorChange}
-
-                                />
-                                <NoteColumn
-                                    notes={filteredNotes}
-                                    onEdit={(e) => { e.stopPropagation(); perm === 'edit' && onEdit(note); }}
-                                    permission={perm}
-                                    noteDetail={() => setNoteDetail(favouriteNotes)}
-                                    onDelete={(e) => { e.stopPropagation(); perm === 'edit' && onDelete(filteredNotes._id); }}
-                                    onToggleFavourite={(e, id, isFav) => { e.stopPropagation(); onToggleFavourite(id, isFav); }}
-                                    onShare={(e, n) => { e.stopPropagation(); setShareModal({ open: true, note: n }); }}
-                                    onColorChange={handleColorChange}
-                                />
-                                <NoteColumn
-                                    notes={filteredNotes}
-                                    onEdit={(e) => { e.stopPropagation(); perm === 'edit' && onEdit(note); }}
-                                    permission={perm}
-                                    noteDetail={() => setNoteDetail(note)}
-                                    onDelete={(e) => { e.stopPropagation(); perm === 'edit' && onDelete(note._id); }}
-                                    onToggleFavourite={(e, id, isFav) => { e.stopPropagation(); onToggleFavourite(id, isFav); }}
-                                    onShare={(e, n) => { e.stopPropagation(); setShareModal({ open: true, note: n }); }}
-                                    onColorChange={handleColorChange}
-                                />
-                            </div> */}
-                            {/* Notes grid */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ml-2 mt-4  md:gap-6">
-                                {filteredNotes.length > 0 ? (
-                                    filteredNotes.map((note) => {
-                                        const perm = getPermission(note);
-                                        return (
-                                            <div key={note._id}  className="cursor-pointer">
-                                                <NoteCard
-                                                    note={note}
-                                                    permission={perm}
-                                                    noteDetail={() => setNoteDetail(note)}
-                                                    onEdit={(e) => { e.stopPropagation(); perm === 'edit' && onEdit(note); }}
-                                                    onDelete={(e) => { e.stopPropagation(); perm === 'edit' && onDelete(note._id); }}
-                                                    onToggleFavourite={(e, id, isFav) => { e.stopPropagation(); onToggleFavourite(id, isFav); }}
-                                                    onShare={(e, n) => { e.stopPropagation(); setShareModal({ open: true, note: n }); }}
-                                                    onColorChange={handleColorChange}
-                                                />
-                                            </div>
-                                        );
-                                    })
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center mt-35 ml-80 h-full w-full overflow-hidden">
-                                        <div className="rounded-full h-62 w-62 bg-indigo-100  ">
-                                            <img src={noteTa} className="w-62 h-62 " />
-                                        </div>
-                                        <div className="flex flex-col text-center mt-6 h-full w-full">
-                                            <p className={`text-2xl ${isDark ? 'text-gray-100' : 'text-gray-800'} font-bold mb-6`}>{searchterm ? "No notes match your search." : "No notes yet. Create one!"}</p>
-                                        </div>
-                                    </div>
-                                )}
+                            <div className=' p-6 md:p-4 h-screen'>
+                                <div className=' flex gap-4 flex-wrap  '>
+                                    <DndContext onDragEnd={handleDragEnd}>
+                                        {filteredNotes.length > 0 ? (
+                                            noteCol.map((col) => {
+                                                const notesInColumn = filteredNotes.filter(note => note.status === col.id || (!note.status && col.id === 'onStart'));
+                                                return (
+                                                    <NoteColumn
+                                                        key={col.id}
+                                                        col={col}
+                                                        notes={notesInColumn}
+                                                        getPermission={getPermission}
+                                                        setNoteDetail={setNoteDetail}
+                                                        onEdit={(note) => onEdit(note)}
+                                                        onDelete={(id) => onDelete(id)}
+                                                        onToggleFavourite={onToggleFavourite}
+                                                        onShare={(e, n) => { e.stopPropagation(); setShareModal({ open: true, note: n }); }}
+                                                        onColorChange={handleColorChange}
+                                                    />
+                                                );
+                                            })
+                                        ) : (
+                                            <>
+                                                {isHomeCLick && !searchterm && (
+                                                    <div className="flex flex-col items-center justify-center mt-35 ml-80 h-full w-full overflow-hidden">
+                                                        <div className="rounded-full h-62 w-62 bg-indigo-100  ">
+                                                            <img src={noteTa} className="w-62 h-62 " />
+                                                        </div>
+                                                        <div className="flex flex-col text-center mt-6 h-full w-full">
+                                                            <p className={`text-2xl ${isDark ? 'text-gray-100' : 'text-gray-800'} font-bold mb-6`}>{searchterm ? "No notes match your search." : "No notes yet. Create one!"}</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </DndContext>
+                                </div>
                             </div>
-
+                            
                         </>
                     )}
                     {isFavouritesClick && (
@@ -428,10 +461,10 @@ export default function MainPage() {
                                             note={note}
                                             permission={perm}
                                             noteDetail={() => setNoteDetail(note)}
-                                            onEdit={() => perm === 'edit' && onEdit(note)}
-                                            onDelete={() => perm === 'edit' && onDelete(note._id)}
+                                            onEdit={() => onEdit(note)}
+                                            onDelete={() => onDelete(note._id)}
                                             onToggleFavourite={onToggleFavourite}
-                                            onShare={(n) => setShareModal({ open: true, note: n })}
+                                            onShare={() => setShareModal({ open: true, note: note })}
                                         />
                                     );
                                 })
@@ -468,7 +501,7 @@ export default function MainPage() {
                         </div>
                         <Form
                             fields={NoteField}
-                            onSubmit={(v) => { currentNote ? handleUpdateNote(v) : handleCreateNote(v); }}
+                            onSubmit={(v) => { currentNote ? handleUpdateNote(v, currentNote._id) : handleCreateNote(v); }}
                             initialValue={currentNote}
                             buttonClassName="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md transition-colors"
                             buttonText={currentNote ? "Edit Note" : "Create Note"}
@@ -479,27 +512,27 @@ export default function MainPage() {
 
             {/* Note Detail Modal */}
             {noteDetail && (
-                <div className={`fixed inset-0 z-50 flex  items-center justify-center `} onClick={() => setNoteDetail(null)}>
+                <div className={`fixed inset-0 z-50 flex  items-center justify-center  `} onClick={() => setNoteDetail(null)}>
                     <DisplayNotes note={noteDetail} onClose={() => setNoteDetail(null)} />
                 </div>
             )}
 
             {/* Share Note Modal */}
             {shareModal.open && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                    <div className={` rounded-lg shadow-xl w-full max-w-md p-6 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}}`}>
-                        <h2 className="text-lg font-semibold mb-4">Share "{shareModal.note?.title ?? ''}"</h2>
+                <div className={`fixed flex items-center justify-center inset-0 z-50 bg-black/20 backdrop:blur-2xl bg-opacity-40  `}>
+                    <div className={` rounded-lg shadow-2xl  w-full max-w-md p-6 ${isDark ? 'bg-gray-700' : 'bg-white'} `}>
+                        <h2 className={`text-lg ${isDark ? 'text-gray-100' : 'text-gray-800'} font-semibold mb-4`}>Share "{shareModal.note?.title ?? ''}"</h2>
                         <input
                             type="email"
                             placeholder="Enter user email"
                             value={shareEmail}
                             onChange={(e) => setShareEmail(e.target.value)}
-                            className="w-full border px-3 py-2 rounded-md mb-4"
+                            className={`w-full border px-3 py-2 rounded-md mb-4 ${isDark ? 'bg-gray-700 text-gray-100' : 'bg-gray-200 text-gray-800'}`}
                         />
                         <div className="mb-4">
-                            <p className="font-medium mb-2">Permission</p>
+                            <p className={`font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>Permission</p>
                             <div className="flex items-center gap-6">
-                                <label className="flex items-center gap-2 cursor-pointer">
+                                <label className={`flex items-center gap-2 cursor-pointer ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
                                     <input
                                         type="radio"
                                         name="permission"
@@ -508,7 +541,7 @@ export default function MainPage() {
                                         onChange={() => setSharePermission("view")}
                                     /> View
                                 </label>
-                                <label className="flex items-center gap-2 cursor-pointer">
+                                <label className={`flex items-center gap-2 cursor-pointer ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
                                     <input
                                         type="radio"
                                         name="permission"

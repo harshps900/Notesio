@@ -31,7 +31,12 @@ const NoteField = [
         validation: {
             
         },
+        
     },
+    {
+        name:'tags',
+        label:'Tags',
+    }
     
 ]
 export default NoteField

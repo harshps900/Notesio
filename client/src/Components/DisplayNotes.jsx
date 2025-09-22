@@ -22,25 +22,6 @@ export default function DisplayNotes({ note, onClose }) {
         };
     }, []);
 
-    const generateColorForId = (id) => {
-        const colors = [
-            `${isDark ? 'bg-yellow-500 border-yellow-400 ' : 'bg-yellow-300 border-yellow-200 '}`,
-            `${isDark ? 'bg-green-500 border-green-400 ' : 'bg-green-200 border-green-200 '}`,
-            `${isDark ? 'bg-blue-500 border-blue-400 ' : 'bg-blue-400 border-blue-200 '}`,
-            `${isDark ? 'bg-pink-500 border-pink-400 ' : 'bg-pink-400 border-pink-200 '}`,
-            `${isDark ? 'bg-purple-500 border-purple-400 ' : 'bg-purple-400 border-purple-200 '}`,
-            `${isDark ? 'bg-indigo-500 border-indigo-400 ' : 'bg-indigo-200 border-indigo-200 '}`,
-            `${isDark ? 'bg-teal-500 border-teal-400 ' : 'bg-teal-200 border-teal-200 '}`,
-            `${isDark ? 'bg-red-500 border-red-400' : 'bg-red-200 border-red-200 '}`,
-            `${isDark ? 'bg-orange-500 border-orange-400 ' : 'bg-orange-200 border-orange-200 '}`,
-            `${isDark ? 'bg-cyan-500 border-cyan-400 ' : 'bg-cyan-200 border-cyan-200 '}`,
-        ];
-        let total = 0;
-        for (let i = 0; i < String(id).length; i++) {
-            total += String(id).charCodeAt(i);
-        }
-        return colors[total % colors.length];
-    };
 
     const formatDate = (dateString) => {
         if (!dateString) return "";
@@ -59,7 +40,7 @@ export default function DisplayNotes({ note, onClose }) {
         <div className={`rounded-xl p-5 border h-auto w-2xl  shadow-sm hover:shadow-md ${isDark ? ' bg-gray-800' : 'bg-gray-100'} transition-all duration-200 flex flex-col relative group`} onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-4">
                 <h2 className={`text-2xl font-bold  ${isDark ? 'text-gray-100' : 'text-gray-800 '} capitalize`}>{note.title}</h2>
-                <div  className={` h-2 w-2 rounded-full ${generateColorForId(note._id)} `}></div>
+                
                 <button onClick={onClose} className={` hover:text-red-500 ${isDark ? 'text-gray-100' : 'text-gray-800 '} text-2xl leading-none`}>×</button>
             </div>
             <div className={` ${isDark ? 'text-gray-100' : 'text-gray-800 '} max-w-none  mb-6 overflow-y-auto max-h-[50vh]`}>

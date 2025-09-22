@@ -5,7 +5,7 @@ import path from 'path';
 import mongoose from 'mongoose';
 
 export const createNote = async (req, res) => {
-    const { title, description, color, priority, status } = req.body;
+    const { title, description, color, priority, status,tags } = req.body;
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : '';
 
     if (!title) {
@@ -17,8 +17,9 @@ export const createNote = async (req, res) => {
             description,
             color: color || null, // Ensure color is saved, even if null
             priority: priority || 0, // Ensure priority has a default
-            status: status || 'todo',
+            status: status || 'onStart',
             imageUrl,
+            tags,
             userId: req.user.id
         });
         // Emit to all clients except the sender
@@ -53,7 +54,7 @@ export const allNotes = async (req, res) => {
 
 export const editNote = async (req, res) => {
     const { id } = req.params;
-    const { title, description, color, priority, status } = req.body;
+    const { title, description, color, priority, status,tags } = req.body;
     const updateData = { lastEditedBy: req.user.id };
 
     // Only add fields to updateData if they are provided in the request
@@ -62,12 +63,16 @@ export const editNote = async (req, res) => {
     if (color !== undefined) updateData.color = color;
     if (priority !== undefined) updateData.priority = priority;
     if (status !== undefined) updateData.status = status;
+    if (tags !== undefined) updateData.tags = tags;
+
     try {
         const note = await Notes.findById(id);
         if (!note) {
             return res.status(404).json({ success: false, message: "Note not found." });
         }
-        const isOwner = note.userId.toString() === req.user.id;
+        
+        const ownerId = note.userId._id ? note.userId._id.toString() : note.userId.toString();
+        const isOwner = ownerId === req.user.id;
         const isSharedWith = note.sharedWith.some(
             share => share.user && share.user.toString() === req.user.id && share.permission === 'edit'
         );
@@ -108,6 +113,60 @@ export const editNote = async (req, res) => {
     }
 };
 
+export const updateNoteDetails = async (req, res) => {
+    const { id } = req.params;
+    const { color, priority, status, isFavourite } = req.body;
+    const updateData = { lastEditedBy: req.user.id };
+
+    // Only add fields to updateData if they are provided in the request
+    if (color !== undefined) updateData.color = color;
+    if (priority !== undefined) updateData.priority = priority;
+    if (status !== undefined) updateData.status = status;
+    if (isFavourite !== undefined) updateData.isFavourite = isFavourite;
+
+    try {
+        const note = await Notes.findById(id);
+        if (!note) {
+            return res.status(404).json({ success: false, message: "Note not found." });
+        }
+
+        const ownerId = note.userId._id ? note.userId._id.toString() : note.userId.toString();
+        const isOwner = ownerId === req.user.id;
+        const shareInfo = note.sharedWith.find(
+            share => share.user && share.user.toString() === req.user.id && (share.permission === 'edit' || share.permission === 'view')
+        );
+
+        
+        const isFavouriteUpdateOnly = Object.keys(updateData).length === 2 && 'isFavourite' in updateData && 'lastEditedBy' in updateData;
+
+        if (isFavouriteUpdateOnly) {
+            if (!isOwner && !shareInfo) {
+                return res.status(403).json({ success: false, message: "You are not authorized to modify this note." });
+            }
+        } else {
+            // For any other update (color, status, etc.), require 'edit' permission.
+            if (!isOwner && (!shareInfo || shareInfo.permission !== 'edit')) {
+                return res.status(403).json({ success: false, message: "You do not have permission to edit this note." });
+            }
+        }
+
+        if (!isOwner && !shareInfo) {
+            return res.status(403).json({ success: false, message: "You are not authorized to modify this note." });
+        }
+
+        const updatedNote = await Notes.findByIdAndUpdate(id, { $set: updateData }, { new: true })
+            .populate("userId", "name")
+            .populate("sharedWith.user", "name email")
+            .populate('lastEditedBy', 'name');
+
+        const noteToEmit = updatedNote.toObject();
+        if (req.io) req.io.to(id).emit("noteUpdated", noteToEmit);
+
+        return res.status(200).json({ success: true, message: "Note updated successfully", note: updatedNote });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: "Server error while updating note details." });
+    }
+};
 // Delete Note
 export const SoftDeleteNote = async (req, res) => {
     const { id } = req.params;
@@ -122,9 +181,10 @@ export const SoftDeleteNote = async (req, res) => {
             return res.status(404).json({ success: false, message: "Note not found." });
         }
 
-        const isOwner = note.userId.toString() === req.user.id;
+        const ownerId = note.userId._id ? note.userId._id.toString() : note.userId.toString();
+        const isOwner = ownerId === req.user.id;
         const isSharedWith = note.sharedWith.some(
-            (share) => share.user && share.user.toString() === req.user.id && share.permission === "edit"
+            (share) => share.user && share.user.toString() === req.user.id && share.permission === "edit" && share.permission === "view"
         );
 
 
@@ -240,7 +300,8 @@ export const deletePermanently = async (req, res) => {
             return res.status(404).json({ success: false, message: "Note not found." });
         }
 
-        const isOwner = note.userId.toString() === req.user.id;
+        const ownerId = note.userId._id ? note.userId._id.toString() : note.userId.toString();
+        const isOwner = ownerId === req.user.id;
         const isSharedWith = note.sharedWith.some(
             (share) => share.user && share.user.toString() === req.user.id && share.permission === "edit"
         );
@@ -275,7 +336,8 @@ export const restoreNote = async (req, res) => {
             return res.status(404).json({ success: false, message: "Note not found in trash." });
         }
 
-        const isOwner = note.userId.toString() === req.user.id;
+        const ownerId = note.userId._id ? note.userId._id.toString() : note.userId.toString();
+        const isOwner = ownerId === req.user.id;
         const isSharedWith = note.sharedWith.some(
             (share) => share.user && share.user.toString() === req.user.id && share.permission === "edit"
         );
@@ -293,37 +355,6 @@ export const restoreNote = async (req, res) => {
     }
 };
 
-// Toggle favourite status of a note
-export const toggleFavourite = async (req, res) => {
-    const { id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ success: false, message: "Invalid note ID" });
-    }
-
-    try {
-        const note = await Notes.findById(id);
-        if (!note) {
-            return res.status(404).json({ success: false, message: "Note not found." });
-        }
-
-        const isOwner = note.userId.toString() === req.user.id;
-        const isSharedWith = note.sharedWith.some(
-            (share) => share.user && share.user.toString() === req.user.id && share.permission === "edit"
-        );
-
-        if (!isOwner && !isSharedWith) {
-            return res.status(403).json({ success: false, message: "You are not authorized to modify this note." });
-        }
-
-        const updatedNote = await Notes.findByIdAndUpdate(id, { isFavourite: !note.isFavourite }, { new: true });
-
-        return res.status(200).json({ success: true, message: "Note favourite status updated", note: updatedNote });
-    } catch (error) {
-        console.error("Error toggling favourite:", error);
-        return res.status(500).json({ success: false, message: "Server error while updating note." });
-    }
-};
 // delete all
 export const deleteAllNotes = async (req, res) => {
     try {

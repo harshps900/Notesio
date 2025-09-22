@@ -9,6 +9,9 @@ const NoteSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    tags: [{
+        type: String,
+    }],
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
@@ -18,7 +21,7 @@ const NoteSchema = new mongoose.Schema({
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         permission: {
             type: String,
-            enums: ['view', 'edit'],
+            enum: ['view', 'edit'],
             default: 'view'
         }
     }],
@@ -49,7 +52,12 @@ const NoteSchema = new mongoose.Schema({
     imageUrl: {
         type: String, // URL or path to the image
         default: ''
-    }
+    },
+    status: {
+        type: String,
+        enum: ['onStart', 'progress', 'done'],
+        default: 'onStart'
+    },
 }, { timestamps: true });
 
 const Notes = mongoose.models.Notes || mongoose.model("Notes", NoteSchema);

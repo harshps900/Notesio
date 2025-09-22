@@ -97,7 +97,7 @@ export default function SideBar({
                                     checked={isDark}
                                     onChange={toggleTheme}
                                 />}
-                                label={isDark ? 'Dark Mode' : 'Light Mode'}
+                                label={isDark ? 'Light Mode' : 'Dark Mode'}
                             />
                         </FormGroup>
                     </div>
