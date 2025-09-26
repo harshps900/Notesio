@@ -45,17 +45,12 @@ const NoteSchema = new mongoose.Schema({
         type: String,
         
     },
-    priority: {
-        type: Number,
-        default: 0 // 0: None, 1: Low, 2: Medium, 3: High
-    },
     imageUrl: {
         type: String, // URL or path to the image
         default: ''
     },
     status: {
         type: String,
-        enum: ['onStart', 'progress', 'done'],
         default: 'onStart'
     },
 }, { timestamps: true });

@@ -5,6 +5,7 @@ import { useTheme } from '../../Context/ThemeProvider';
 export default function Form({ fields, buttonText, onSubmit, buttonClassName, initialValue = {} }) {
 
     const stableInitialValue = useMemo(() => initialValue || {}, [initialValue]);
+    
     const { isDark } = useTheme();
     const {
         register,
@@ -13,7 +14,7 @@ export default function Form({ fields, buttonText, onSubmit, buttonClassName, in
         reset,
     } = useForm({
         defaultValues: stableInitialValue
-    });
+    }); 
 
     useEffect(() => {
         reset(stableInitialValue);

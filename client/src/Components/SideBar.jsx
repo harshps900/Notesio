@@ -69,7 +69,7 @@ export default function SideBar({
 
     return (
         <>
-            <div className={`md:w-64 w-full h-screen md:h-[100%]  shadow-lg md:mt-0 md:pr-3 md:pt-2 flex flex-col ${isDark ? 'bg-gray-900 text-gray-100' : ' text-gray-800 bg-gray-50 '} `}>
+            <div className={`md:w-64 w-full h-screen md:h-[100%]   shadow-lg md:mt-0 md:pr-3 md:pt-2 flex flex-col ${isDark ? 'bg-gray-900 text-gray-100' : ' text-gray-800 bg-gray-50 '} `}>
                 {/* sidebar components */}
                 <div className=" flex flex-col mt-6  justify-between gap-85 ">
                 <div className="flex flex-col  gap-4">

@@ -5,7 +5,8 @@ import Login from './Components/Login'
 import Register from './Components/Register'
 import ProtectedRoute from './Components/ProtectedRoute'
 import PublicRoute from './Components/PublicRoute'
-import Trash from './Components/Trash'
+import UserDashboard from './Pages/UserDashboard'
+import LandingPage from './Pages/LandingPage'
 function App() {
 
   return (
@@ -16,18 +17,27 @@ function App() {
             <Route path='/Notesio' element={
               <ProtectedRoute>
                 <MainPage />
-              </ProtectedRoute> 
-              } />
+              </ProtectedRoute>
+            } />
+            <Route path='/UserDashboard' element={
+              <ProtectedRoute>
+                <UserDashboard />
+              </ProtectedRoute>} />
             <Route path='/login' element={
-              <PublicRoute> 
-              <Login />
-                
-                </PublicRoute>
-            }/>
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            } />
             <Route path='/register' element={
               <PublicRoute>
                 <Register />
-                </PublicRoute>} />
+              </PublicRoute>
+            } />
+              <Route path='/LandingPage'element={
+                <ProtectedRoute>
+                  <LandingPage/>
+                </ProtectedRoute>
+              } />
           </Routes>
         </BrowserRouter>
       </ErrorBoundaries>

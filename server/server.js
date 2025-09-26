@@ -53,14 +53,21 @@ app.get('/', (req, res) => {
 })
 
 io.on("connection", (socket) => {
-    // console.log("Client connected with socket.io:", socket.id);
+    console.log("Client connected with socket.io:", socket.id);
     socket.emit("message", "Welcome! You are connected to the WebSocket server.");
 
-    // Join a room based on user ID for personal notifications
-    const userId = socket.handshake.query.userId;
-    if (userId) {
+    // Attach socket.id to the user object for exclusion in broadcasts
+    const userId = socket.handshake.auth.userId;
+    if (userId) { // This now correctly uses the auth object
         socket.join(userId);
+        socket.user = { id: userId, socketId: socket.id }; // Attach user info to the socket
     }
+
+    socket.on('joinUserRoom', (userId) => {
+        socket.join(userId);
+        console.log(`Socket ${socket.id} joined user room ${userId}`);
+    });
+
     socket.on('joinNoteRoom', (noteId) => {
         socket.join(noteId);
         console.log(`Socket ${socket.id} joined room ${noteId}`);

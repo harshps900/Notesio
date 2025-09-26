@@ -3,9 +3,11 @@ import User from '../Model/UserModel.js';
 import fs from 'fs';
 import path from 'path';
 import mongoose from 'mongoose';
+import Status from '../Model/StatusModel.js';
+
 
 export const createNote = async (req, res) => {
-    const { title, description, color, priority, status,tags } = req.body;
+    const { title, description, color, priority, status, } = req.body;
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : '';
 
     if (!title) {
@@ -16,10 +18,9 @@ export const createNote = async (req, res) => {
             title,
             description,
             color: color || null, // Ensure color is saved, even if null
-            priority: priority || 0, // Ensure priority has a default
             status: status || 'onStart',
             imageUrl,
-            tags,
+            // tags,
             userId: req.user.id
         });
         // Emit to all clients except the sender
@@ -54,7 +55,7 @@ export const allNotes = async (req, res) => {
 
 export const editNote = async (req, res) => {
     const { id } = req.params;
-    const { title, description, color, priority, status,tags } = req.body;
+    const { title, description, color, priority, status, } = req.body;
     const updateData = { lastEditedBy: req.user.id };
 
     // Only add fields to updateData if they are provided in the request
@@ -63,14 +64,14 @@ export const editNote = async (req, res) => {
     if (color !== undefined) updateData.color = color;
     if (priority !== undefined) updateData.priority = priority;
     if (status !== undefined) updateData.status = status;
-    if (tags !== undefined) updateData.tags = tags;
+    // if (tags !== undefined) updateData.tags = tags;
 
     try {
         const note = await Notes.findById(id);
         if (!note) {
             return res.status(404).json({ success: false, message: "Note not found." });
         }
-        
+
         const ownerId = note.userId._id ? note.userId._id.toString() : note.userId.toString();
         const isOwner = ownerId === req.user.id;
         const isSharedWith = note.sharedWith.some(
@@ -136,7 +137,7 @@ export const updateNoteDetails = async (req, res) => {
             share => share.user && share.user.toString() === req.user.id && (share.permission === 'edit' || share.permission === 'view')
         );
 
-        
+
         const isFavouriteUpdateOnly = Object.keys(updateData).length === 2 && 'isFavourite' in updateData && 'lastEditedBy' in updateData;
 
         if (isFavouriteUpdateOnly) {
@@ -184,7 +185,7 @@ export const SoftDeleteNote = async (req, res) => {
         const ownerId = note.userId._id ? note.userId._id.toString() : note.userId.toString();
         const isOwner = ownerId === req.user.id;
         const isSharedWith = note.sharedWith.some(
-            (share) => share.user && share.user.toString() === req.user.id && share.permission === "edit" && share.permission === "view"
+            (share) => share.user && share.user.toString() === req.user.id && share.permission === "edit"
         );
 
 
@@ -229,6 +230,7 @@ export const shareNote = async (req, res) => {
         }
 
         const userToShareWith = await User.findOne({ email });
+
         if (!userToShareWith) {
             return res.status(404).json({ success: false, message: `User with email "${email}" not found.` });
         }
@@ -360,7 +362,7 @@ export const deleteAllNotes = async (req, res) => {
     try {
         const userId = req.user.id;
 
-        
+
         const result = await Notes.deleteMany({
             userId: userId,
             isDeleted: true
@@ -373,28 +375,68 @@ export const deleteAllNotes = async (req, res) => {
     }
 }
 
-// Update priorities of multiple notes
-export const updateNotePriorities = async (req, res) => {
-    const { updates } = req.body; // Expects an array of { id: string, priority: number }
+
+
+export const createStatus = async (req, res) => {
+    const { name } = req.body;
     const userId = req.user.id;
 
-    if (!Array.isArray(updates)) {
-        return res.status(400).json({ success: false, message: "Invalid input: 'updates' must be an array." });
+    if (!name) {
+        return res.status(400).json({ success: false, message: "Status name is required." });
     }
 
     try {
-        const bulkOps = updates.map(update => ({
-            updateOne: {
-                filter: { _id: update.id, userId: userId }, // Ensure user owns the note
-                update: { $set: { priority: update.priority } }
-            }
-        }));
-
-        await Notes.bulkWrite(bulkOps);
-
-        return res.status(200).json({ success: true, message: "Note priorities updated successfully." });
+        const newStatus = await Status.create({
+            name,
+            userId
+        });
+        res.status(201).json({ success: true, message: "Status created successfully", status: newStatus });
     } catch (error) {
-        console.error("Error updating note priorities:", error);
-        return res.status(500).json({ success: false, message: "Server error while updating priorities." });
+        console.error("Error creating status:", error);
+        res.status(500).json({ success: false, message: "Server error while creating status." });
     }
 };
+export const getStatuses = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const defaultStatuses = [
+            { _id: 'onStart', name: 'onStart', isDefault: true },
+            { _id: 'progress', name: 'Progress', isDefault: true },
+            { _id: 'done', name: 'Done', isDefault: true }
+        ];
+        const customStatuses = await Status.find({ userId });
+        const allStatuses = [...defaultStatuses, ...customStatuses];
+        res.status(200).json({ success: true, statuses: allStatuses });
+    } catch (error) {
+        console.error("Error fetching statuses:", error);
+        res.status(500).json({ success: false, message: "Server error while fetching statuses." });
+    }
+};
+export const deleteStatus = async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ success: false, message: "Invalid note ID" });
+    }
+    // Prevent deletion of default statuses
+    if (['onStart', 'progress', 'done'].includes(id)) {
+        return res.status(403).json({ success: false, message: "Cannot delete a default status." });
+    }
+    try {
+        const status = await Status.findOne({ _id: id, userId });
+        if (!status) {
+            return res.status(404).json({ success: false, message: "Status not found." });
+        }
+        // Move notes from the deleted status to 'onStart'
+        await Notes.updateMany(
+            { userId: userId, status: id },
+            { $set: { status: 'onStart' } }
+        );
+        await Status.findByIdAndDelete(id);
+
+        res.status(200).json({ success: true, message: "Status deleted successfully" });
+
+    } catch (error) {
+        console.error("Error deleting status:", error)
+    }
+}

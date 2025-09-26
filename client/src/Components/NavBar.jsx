@@ -46,6 +46,7 @@ export default function NavBar({ searchterm, setSearchTerm, menu }) {
 
             {/* User Actions */}
             <div className="flex items-center">
+                
                 {!user ? (
                     <div className="flex space-x-3">
                         <button 
@@ -59,6 +60,9 @@ export default function NavBar({ searchterm, setSearchTerm, menu }) {
                             className={`px-4 py-2 bg-indigo-600 text-white font-medium rounded-md hover:bg-indigo-700  transition-colors shadow-sm`}
                         >
                             Register
+                        </button>
+                        <button onClick={() => navigate('/LandingPage')} className={`px-4 py-2 bg-indigo-600 text-white font-medium rounded-md hover:bg-indigo-700  transition-colors shadow-sm`}>
+                            Go Back
                         </button>
                     </div>
                 ) : (
@@ -82,7 +86,7 @@ export default function NavBar({ searchterm, setSearchTerm, menu }) {
                             <div className={`absolute right-0 mt-2 w-48  rounded-md shadow-lg py-1 border  ${isDark?'bg-gray-800 border-gray-600 ':'bg-white border-gray-200 '} z-50`}>
                                 <div className={`px-4 py-2 border-b  ${isDark?'border-gray-600':'border-gray-100'}`}>
                                     <p className={`text-sm ${isDark?'text-gray-200 ':'text-gray-600 '}`}>Signed in as</p>
-                                    <p className={`text-sm font-medium  ${isDark?'text-gray-200 ':'text-gray-900 '} truncate`}>{user.email}</p>
+                                    <p onClick={() => navigate('/UserDashboard')} className={`text-sm font-medium  ${isDark?'text-gray-200 ':'text-gray-900 '} truncate`}>{user.email}</p>
                                 </div>
                                 <button 
                                     onClick={() => {

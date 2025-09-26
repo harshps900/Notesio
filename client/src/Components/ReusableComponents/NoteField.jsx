@@ -33,10 +33,10 @@ const NoteField = [
         },
         
     },
-    {
-        name:'tags',
-        label:'Tags',
-    }
+    // {
+    //     name:'tags',
+    //     label:'Tags',
+    // }
     
 ]
 export default NoteField

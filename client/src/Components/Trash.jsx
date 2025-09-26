@@ -6,6 +6,7 @@ import { useAuth } from "../Context/AuthProvider";
 import swal from "sweetalert";
 import { format, isToday, isYesterday } from 'date-fns';
 import { useTheme } from "../Context/ThemeProvider";
+import trashp from '../assets/trashp.png'
 
 export default function Trash() {
     const [trash, setTrash] = useState([]);
@@ -124,17 +125,17 @@ export default function Trash() {
                 buttons: ["Cancel", "Yes"],
             }).then(async (willDelete) => {
                 if (!willDelete) return; {
-                const res = await axios.delete(`http://localhost:4000/api/notes/deleteAll`, {
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
-                    },
-                })
-                if (res.data.success) {
-                    showToast("All notes deleted permanently", "success");
-                    setTrash([]);
+                    const res = await axios.delete(`http://localhost:4000/api/notes/deleteAll`, {
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${localStorage.getItem("token")}`,
+                        },
+                    })
+                    if (res.data.success) {
+                        showToast("All notes deleted permanently", "success");
+                        setTrash([]);
+                    }
                 }
-            }
             })
 
         } catch (error) {
@@ -160,7 +161,7 @@ export default function Trash() {
                                     <h3 className={`text-lg font-semibold  line-clamp-2 pr-6 capitalize ${isDark ? 'text-gray-100 ' : 'text-gray-800 '}`}>{note.title}</h3>
                                     <p className={`text-sm line-clamp-1 leading-relaxed ${isDark ? 'text-gray-100 ' : 'text-gray-800 '}`}>{note.description}</p>
                                     {note.imageUrl && (
-                                        <img src={`http://localhost:4000${note.imageUrl}`} alt={note.title} className="my-3 rounded-lg object-cover max-h-48 w-full" />
+                                        <img draggable="false" src={`http://localhost:4000${note.imageUrl}`} alt={note.title} className="my-3 rounded-lg object-cover max-h-48 w-full" />
                                     )}
                                 </div>
                                 <div className="mt-auto pt-3 border-t border-white/50 flex justify-between items-center">
@@ -180,7 +181,14 @@ export default function Trash() {
                             </div>
                         ))
                     ) : (
-                        <p className="text-gray-500 col-span-full text-center mt-8">Your trash is empty.</p>
+                        <div className="flex flex-col items-center justify-center mt-30 ml-110 h-full w-full overflow-hidden">
+                            <div className="rounded-full h-62 w-62 bg-indigo-200  ">
+                                <img draggable="false" src={trashp} className="w-62 h-62 " />
+                            </div>
+                            <div className="flex flex-col   h-full w-full">
+                                <p className={`font-serif text-2xl col-span-full ${isDark ? 'text-gray-100' : 'text-gray-800'} text-center mt-8`}> No Notes here yet</p>
+                            </div>
+                        </div>
                     )}
                 </div>
             </div>

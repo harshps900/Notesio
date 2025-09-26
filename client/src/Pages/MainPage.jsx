@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useAuth } from "../Context/AuthProvider";
 import { io } from "socket.io-client";
 import { useTheme } from "../Context/ThemeProvider";
-import {DndContext,} from "@dnd-kit/core";
+import { DndContext, } from "@dnd-kit/core";
 import axios from "axios";
 import NavBar from "../Components/NavBar";
 import Form from "../Components/ReusableComponents/Form";
@@ -14,6 +14,8 @@ import FavNotes from '../Components/FavNotes'
 import noteTa from '../assets/noteTa.png'
 import DisplayNotes from "../Components/DisplayNotes";
 import NoteColumn from '../Components/NoteColumn'
+import NoteStatus from "../Components/ReusableComponents/StatusField";
+
 
 export default function MainPage() {
     // note states 
@@ -26,15 +28,20 @@ export default function MainPage() {
     const [shareEmail, setShareEmail] = useState("");
     const [sharePermission, setSharePermission] = useState("view");
     // open and close states
+    const [value, setValue] = useState("1")
     const [isHomeCLick, setIsHomeClick] = useState(false);
     const [isNoteOpen, setIsNoteOpen] = useState(false);
     const [isFavouritesClick, setIsFavouritesClick] = useState(false);
     const [isTrashClick, setIsTrashClick] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     // other states
-    const { isDark } = useTheme();
+    const { isDark, toggleTheme } = useTheme();
     const { showToast, user } = useAuth();
     const [searchterm, setSearchTerm] = useState("");
+    // state change
+    const [noteColumns, setNoteColumns] = useState([])
+    const [newColumnName, setNewColumnName] = useState('')
+    const [isColOpen, setIsColOpen] = useState(false)
     // keep socket ref so it's stable across renders
     const socketRef = useRef(null);
 
@@ -72,6 +79,10 @@ export default function MainPage() {
         setIsMenuOpen(prev => !prev);
     }
 
+    const toggleCol = () => {
+        setIsColOpen(prev => !prev)
+    }
+
     useEffect(() => {
         setIsHomeClick(true);
     }, [])
@@ -104,12 +115,28 @@ export default function MainPage() {
         fetchNotes();
     }, []);
 
+    // fetch columns
+    useEffect(() => {
+        const fetchStatuses = async () => {
+            try {
+                const { data } = await axios.get("http://localhost:4000/api/notes/statuses", {
+                    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+                });
+                if (data.success) {
+                    setNoteColumns(data.statuses.map(s => ({ id: s._id, title: s.name })));
+                }
+            } catch (error) {
+                console.error("Error fetching statuses:", error);
+            }
+        };
+        fetchStatuses();
+    }, []);
     // create
     const handleCreateNote = async (formData) => {
         const data = new FormData();
         data.append("title", formData.title);
         data.append("description", formData.description);
-        data.append("tags",formData.tags)
+        // data.append("tags",formData.tags)
         if (formData.color) data.append("color", formData.color);
         if (formData.image && formData.image[0]) {
             data.append("image", formData.image[0]);
@@ -201,7 +228,6 @@ export default function MainPage() {
     const handleNoteStatusChange = async (noteId, newStatus) => {
         // Optimistic UI update
         setNotes(prev => prev.map(n => n._id === noteId ? { ...n, status: newStatus } : n));
-
         try {
             await axios.patch(
                 `http://localhost:4000/api/notes/update-details/${noteId}`,
@@ -213,12 +239,10 @@ export default function MainPage() {
                     },
                 }
             );
-            if (newStatus === 'progress') {
-                showToast("Note status Changed to Progress.", "success");
-            }
-            if (newStatus === 'done') {
-                showToast("Note status Changed to Done.", "success");
-            }
+            // Find the column title to display in the toast message
+            const column = noteColumns.find(c => c.id === newStatus);
+            const columnTitle = column ? column.title : newStatus;
+            showToast(`Note moved to ${columnTitle}`, "success");
         } catch (error) {
             console.error("Failed to update note status:", error);
             showToast("Failed to update note status.", "error");
@@ -239,7 +263,7 @@ export default function MainPage() {
                 if (!willDelete) return; {
                     const res = await axios.post(
                         `http://localhost:4000/api/notes/SoftDelete/${id}`,
-                        {}, 
+                        {},
                         {
                             headers: {
                                 "Content-Type": "application/json",
@@ -269,7 +293,7 @@ export default function MainPage() {
 
     // handle color change
     const handleColorChange = async (noteId, newColor) => {
-        
+
         await updateNote(noteId, { color: newColor });
     };
 
@@ -307,7 +331,7 @@ export default function MainPage() {
         if (!user?._id) return;
         // create socket and store in ref
         const socket = io("http://localhost:4000", {
-            auth: { token: localStorage.getItem("token") }, 
+            auth: { token: localStorage.getItem("token") },
         });
         socketRef.current = socket;
         const handleConnect = () => console.log("Connected to server via socket.io");
@@ -320,6 +344,9 @@ export default function MainPage() {
         const handleNoteDeleted = (deletedNoteId) => {
             setNotes((prevNotes) => prevNotes.filter((note) => note._id !== deletedNoteId));
         };
+        const handleNoteStatusChange = (noteId, newStatus) => {
+            setNoteColumns(prev => prev.map(c => c.id === newStatus ? { ...c, id: noteId } : c));
+        }
         const handleNoteShared = (sharedNote) => {
             showToast(`A note has been shared with you: "${sharedNote.title}"`, "info");
             setNotes((prevNotes) => [sharedNote, ...prevNotes]);
@@ -332,6 +359,7 @@ export default function MainPage() {
         socket.on("noteUpdated", handleNoteUpdated);
         socket.on("noteDeleted", handleNoteDeleted);
         socket.on("noteShared", handleNoteShared);
+        socket.on("noteStatusChanged", handleNoteStatusChange);
         socket.on("disconnect", () => console.log("Disconnected from server"));
         // cleanup on unmount / user change
         return () => {
@@ -340,6 +368,7 @@ export default function MainPage() {
             socket.off("noteUpdated", handleNoteUpdated);
             socket.off("noteDeleted", handleNoteDeleted);
             socket.off("noteShared", handleNoteShared);
+            socket.off("noteStatusChanged", handleNoteStatusChange);
             socket.disconnect();
             socketRef.current = null;
         };
@@ -373,16 +402,10 @@ export default function MainPage() {
         }
     };
 
-    const noteCol = [
-        { id: 'onStart', title: 'onStart' },
-        { id: 'progress', title: 'Progress' },
-        { id: 'done', title: 'Done' }
-    ]
-
     const handleDragEnd = (event) => {
         const { active, over } = event
         if (!over) return
-        const draggedItem = active.id; 
+        const draggedItem = active.id;
         const noteId = typeof draggedItem === 'object' && draggedItem?._id ? draggedItem._id : draggedItem;
         const newStatus = over.id;
 
@@ -393,52 +416,107 @@ export default function MainPage() {
         }
     }
 
+    const handleCreateColumn = async (formData) => {
+        const { name } = formData;
+        if (!name || !name.trim()) {
+            return showToast("Column name cannot be empty.", "warning");
+        }
+        try {
+            const res = await axios.post("http://localhost:4000/api/notes/statuses",
+                { name: name },
+                { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+            );
+            if (res.data.success) {
+                showToast("Column added successfully", "success");
+                setNoteColumns(prev => [...prev, { id: res.data.status._id, title: res.data.status.name }]);
+                toggleCol();
+            }
+        } catch (error) {
+            console.error("Failed to add column:", error);
+            showToast("Failed to add column.", "error");
+        }
+    };
+
+    const handleDeleteStatus = async (id) => {
+
+        try {
+            swal({
+                title: 'Are you sure?',
+                text: "This will delete the status!",
+                icon: 'warning',
+                dangerMode: true,
+                buttons: ["Cancel", "Yes"],
+            }).then(async (willDelete) => {
+                if (!willDelete) return; {
+                    const res = await axios.delete(`http://localhost:4000/api/notes/statuses/${id}`,
+                        {
+                            headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${localStorage.getItem("token")}`,
+                            },
+                        }
+                    );
+                    if (res.data.success) {
+                        console.log(res.data);
+                        showToast("status deleted successfully", "info");
+                        setNoteColumns(prev => prev.filter(n => n.id !== id));
+                    }
+                }
+            });
+        } catch (error) {
+            console.log(error);
+            showToast(error.response?.data?.message || "Failed to delete the status", "error");
+        }
+    };
 
     return (
         <div className={`w-full  md:fixed h-screen flex flex-col ${isDark ? ' bg-gray-800' : 'bg-white'}`}>
             <NavBar searchterm={searchterm} setSearchTerm={setSearchTerm} menu={toggleMenu} />
             <div className="flex flex-1  ">
                 {/* sidebar */}
-                <aside className="hidden md:block">
+                <aside className="   hidden md:block">
                     <SideBar
                         toggleHome={toggleHome} isHomeCLick={isHomeCLick}
                         toggleFavourites={toggleFavourites} isFavouritesClick={isFavouritesClick}
                         toggleTrash={toggleTrash} isTrashClick={isTrashClick}
                     />
                 </aside>
-                <div className=" flex-1 overflow-y-auto ">
+                <div className=" flex-1  overflow-y-auto ">
                     {isHomeCLick && (
                         <>
                             <div className=' p-6 md:p-4 h-screen'>
-                                <div className=' flex gap-4 flex-wrap  '>
+                                <div className="flex justify-between  items-center mb-6">
+                                    <h1 className={`text-2xl ${isDark ? 'text-gray-100' : 'text-gray-800'} font-bold `}>Home</h1>
+                                    <button onClick={() => { toggleCol() }} className={` rounded-2xl cursor-pointer p-2  font-serif ${isDark ? 'text-gray-100 hover:bg-gray-900 ' : 'text-gray-800 hover:bg-indigo-600 hover:text-gray-50'}`}>Create Status</button>
+                                </div>
+                                <div className='flex  gap-2 flex-wrap  '>
                                     <DndContext onDragEnd={handleDragEnd}>
                                         {filteredNotes.length > 0 ? (
-                                            noteCol.map((col) => {
-                                                const notesInColumn = filteredNotes.filter(note => note.status === col.id || (!note.status && col.id === 'onStart'));
-                                                return (
-                                                    <NoteColumn
-                                                        key={col.id}
-                                                        col={col}
-                                                        notes={notesInColumn}
-                                                        getPermission={getPermission}
-                                                        setNoteDetail={setNoteDetail}
-                                                        onEdit={(note) => onEdit(note)}
-                                                        onDelete={(id) => onDelete(id)}
-                                                        onToggleFavourite={onToggleFavourite}
-                                                        onShare={(e, n) => { e.stopPropagation(); setShareModal({ open: true, note: n }); }}
-                                                        onColorChange={handleColorChange}
-                                                    />
-                                                );
-                                            })
+                                            noteColumns.map((col) => (
+                                                <NoteColumn
+                                                    key={col.id}
+                                                    col={col}
+                                                    notes={filteredNotes.filter(note => (note.status || 'onStart') === col.id)}
+                                                    getPermission={getPermission}
+                                                    setNoteDetail={setNoteDetail}
+                                                    onEdit={onEdit}
+                                                    onDelete={onDelete}
+                                                    onToggleFavourite={onToggleFavourite}
+                                                    onShare={(e, n) => { e.stopPropagation(); setShareModal({ open: true, note: n }); }}
+                                                    onColorChange={handleColorChange}
+                                                    onDeleteStatus={handleDeleteStatus}
+                                                />
+                                            ))
                                         ) : (
                                             <>
                                                 {isHomeCLick && !searchterm && (
-                                                    <div className="flex flex-col items-center justify-center mt-35 ml-80 h-full w-full overflow-hidden">
+                                                    <div className="flex flex-col items-center justify-center mt-30 ml-30 h-full w-full overflow-hidden">
                                                         <div className="rounded-full h-62 w-62 bg-indigo-100  ">
-                                                            <img src={noteTa} className="w-62 h-62 " />
+                                                            <img draggable={false} src={noteTa} className="w-62 h-62 " />
                                                         </div>
-                                                        <div className="flex flex-col text-center mt-6 h-full w-full">
-                                                            <p className={`text-2xl ${isDark ? 'text-gray-100' : 'text-gray-800'} font-bold mb-6`}>{searchterm ? "No notes match your search." : "No notes yet. Create one!"}</p>
+                                                        <div className="flex flex-col text-center justify-center items-center  mt-6 h-full w-full">
+                                                            <p className={`text-2xl ${isDark ? 'text-gray-100' : 'text-gray-800'} font-serif mb-6`}>{searchterm ? "No notes match your search." : "No notes yet. Create one!"}</p>
+                                                            <button onClick={toggleNote} className={`p-2 cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors w-55 `}>Create Note</button>
                                                         </div>
                                                     </div>
                                                 )}
@@ -446,8 +524,25 @@ export default function MainPage() {
                                         )}
                                     </DndContext>
                                 </div>
+
+                                {isColOpen && (
+                                    <div className={`fixed inset-0 z-50 flex items-center justify-center  bg-black/20 backdrop:blur-2xl bg-opacity-40`}>
+                                        <div className={` rounded-2xl shadow-2xl w-full max-w-lg p-6 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                                            <div className={`flex justify-between items-center border-b ${isDark ? ' border-gray-200 ' : 'border-gray-200'} pb-2 mb-4`}>
+                                                <p className={`text-xl font-semibold  ${isDark ? 'text-gray-100' : 'text-gray-800'} } `}>Create Status</p>
+                                                <button onClick={toggleCol} className={` hover:text-red-500 text-2xl ${isDark ? 'text-gray-100' : 'text-gray-400'}`}>×</button>
+                                            </div>
+                                            <Form
+                                                fields={NoteStatus}
+                                                onSubmit={handleCreateColumn}
+                                                buttonClassName="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md transition-colors "
+                                                buttonText="Create Status"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                            
+
                         </>
                     )}
                     {isFavouritesClick && (
@@ -472,7 +567,7 @@ export default function MainPage() {
                                 <div className="flex  flex-col  h-screen w-full">
                                     <h1 className={`text-2xl ${isDark ? 'text-gray-100' : 'text-gray-800'} font-bold mb-6`}> Favourite Notes</h1>
                                     <div className="flex flex-col items-center ml-80 justify-center h-full w-full">
-                                        <p className={`text-2xl ${isDark ? 'text-gray-100' : 'text-gray-800'} font-bold mb-6`}>No favourite notes yet.</p>
+                                        <p className={`text-2xl font-serif ${isDark ? 'text-gray-100' : 'text-gray-700'} font-bold mb-6`}>No favourite notes yet.</p>
                                     </div>
                                 </div>
                             )}
@@ -486,9 +581,9 @@ export default function MainPage() {
             {/* Floating Add Button */}
             <button
                 onClick={toggleNote}
-                className="fixed bottom-8 right-8 bg-indigo-600 hover:bg-indigo-700 text-white text-3xl rounded-full h-14 w-14 flex items-center justify-center shadow-lg transition"
+                className="fixed bottom-8 right-8 cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white text-3xl rounded-full h-14 w-14 flex items-center justify-center shadow-lg transition"
             >
-                +
+                <p className="text-center mb-2">+</p>
             </button>
 
             {/* Create Note Modal */}
@@ -499,13 +594,15 @@ export default function MainPage() {
                             <p className={`text-xl font-semibold  ${isDark ? 'text-gray-100' : 'text-gray-800'} } `}>{currentNote ? `Edit Note` : "Create Note"}</p>
                             <button onClick={toggleNote} className={` hover:text-red-500 text-2xl ${isDark ? 'text-gray-100' : 'text-gray-400'}`}>×</button>
                         </div>
-                        <Form
-                            fields={NoteField}
-                            onSubmit={(v) => { currentNote ? handleUpdateNote(v, currentNote._id) : handleCreateNote(v); }}
-                            initialValue={currentNote}
-                            buttonClassName="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md transition-colors"
-                            buttonText={currentNote ? "Edit Note" : "Create Note"}
-                        />
+                                    <Form
+                                        fields={NoteField}
+                                        onSubmit={(v) => { currentNote ? handleUpdateNote(v, currentNote._id) : handleCreateNote(v); }}
+                                        initialValue={currentNote}
+                                        buttonClassName="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md transition-colors"
+                                        buttonText={currentNote ? "Edit Note" : "Create Note"}
+                                    />
+                                
+
                     </div>
                 </div>
             )}
@@ -574,6 +671,8 @@ export default function MainPage() {
                             toggleHome={toggleHome} isHomeCLick={isHomeCLick}
                             toggleFavourites={toggleFavourites} isFavouritesClick={isFavouritesClick}
                             toggleTrash={toggleTrash} isTrashClick={isTrashClick}
+                            menu={toggleMenu}
+
                         />
 
                     </div>

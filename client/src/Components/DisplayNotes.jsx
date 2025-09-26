@@ -38,7 +38,7 @@ export default function DisplayNotes({ note, onClose }) {
 
     return (
         <div className={`rounded-xl p-5 border h-auto w-2xl  shadow-sm hover:shadow-md ${isDark ? ' bg-gray-800' : 'bg-gray-100'} transition-all duration-200 flex flex-col relative group`} onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-start mb-4">
+            <div className="flex justify-between border-b border-gray-400 pb-2 items-start mb-4">
                 <h2 className={`text-2xl font-bold  ${isDark ? 'text-gray-100' : 'text-gray-800 '} capitalize`}>{note.title}</h2>
                 
                 <button onClick={onClose} className={` hover:text-red-500 ${isDark ? 'text-gray-100' : 'text-gray-800 '} text-2xl leading-none`}>×</button>
@@ -47,7 +47,7 @@ export default function DisplayNotes({ note, onClose }) {
                 <p className="text-justify ">{note.description}</p>
             </div>
             {note.imageUrl && (
-                <img src={`http://localhost:4000${note.imageUrl}`} alt={note.title} className="mb-4 rounded-lg object-cover max-h-[30%] max-w-[60%] items-center" />
+                <img src={`http://localhost:4000${note.imageUrl}`} alt={note.title} draggable="false"  className="mb-4 rounded-lg object-cover max-h-[30%] max-w-[60%] items-center" />
             )}
             <div className={`mt-auto pt-3 border-t flex justify-between items-center text-xs  ${isDark ? 'text-gray-100 border-t-gray-500' : 'text-gray-800 border-t-gray-500'}`}>
                 <span>Last updated: {formatDate(note.updatedAt || note.createdAt)}</span>

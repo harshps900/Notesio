@@ -24,16 +24,15 @@ export default function FavNote({ note, onEdit, onDelete, onShare, permission = 
 
     const generateColorForId = (id) => {
         const colors = [
-            `${isDark ? 'bg-yellow-500 border-yellow-400 ' : 'bg-yellow-200 border-yellow-200 '}`,
-            `${isDark ? 'bg-green-500 border-green-400 ' : 'bg-green-200 border-green-200 '}`,
-            `${isDark ? 'bg-blue-500 border-blue-400 ' : 'bg-blue-200 border-blue-200 '}`,
-            `${isDark ? 'bg-pink-500 border-pink-400 ' : 'bg-pink-300 border-pink-200 '}`,
-            `${isDark ? 'bg-purple-500 border-purple-400 ' : 'bg-purple-200 border-purple-200 '}`,
-            `${isDark ? 'bg-indigo-500 border-indigo-400 ' : 'bg-indigo-200 border-indigo-200 '}`,
-            `${isDark ? 'bg-teal-500 border-teal-400 ' : 'bg-teal-200 border-teal-200 '}`,
-            `${isDark ? 'bg-red-500 border-red-400' : 'bg-red-200 border-red-200 '}`,
-            `${isDark ? 'bg-orange-500 border-orange-400 ' : 'bg-orange-200 border-orange-200 '}`,
-            `${isDark ? 'bg-cyan-500 border-cyan-400 ' : 'bg-cyan-200 border-cyan-200 '}`,
+            isDark ? '#4A5568' : '#E2E8F0', // gray
+            isDark ? '#9B2C2C' : '#FEB2B2', // red
+            isDark ? '#975A16' : '#FBD38D', // orange
+            isDark ? '#B7791F' : '#F6E05E', // yellow
+            isDark ? '#2F855A' : '#9AE6B4', // green
+            isDark ? '#2C7A7B' : '#81E6D9', // teal
+            isDark ? '#2B6CB0' : '#90CDF4', // blue
+            isDark ? '#553C9A' : '#B794F4', // purple
+            isDark ? '#97266D' : '#FBB6CE', // pink
         ];
         let total = 0;
         for (let i = 0; i < String(id).length; i++) {
