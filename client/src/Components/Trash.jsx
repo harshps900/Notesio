@@ -8,7 +8,7 @@ import { format, isToday, isYesterday } from 'date-fns';
 import { useTheme } from "../Context/ThemeProvider";
 import trashp from '../assets/trashp.png'
 
-export default function Trash() {
+export default function Trash({ onNoteRestored }) {
     const [trash, setTrash] = useState([]);
     const { showToast } = useAuth();
     const { isDark } = useTheme();
@@ -76,6 +76,7 @@ export default function Trash() {
             if (res.data.success) {
                 showToast("Note restored successfully", "success");
                 setTrash(prev => prev.filter(n => n._id !== id));
+                if (onNoteRestored) onNoteRestored(res.data.note);
             }
         } catch (error) {
             showToast("Failed to restore note", "error");
@@ -158,8 +159,8 @@ export default function Trash() {
                         trash.map((note) => (
                             <div key={note._id} className={`rounded-xl p-5 ${generateColorForId(note._id)} border h-full shadow-sm hover:shadow-md transition-all duration-200 flex flex-col relative group`}>
                                 <div>
-                                    <h3 className={`text-lg font-semibold  line-clamp-2 pr-6 capitalize ${isDark ? 'text-gray-100 ' : 'text-gray-800 '}`}>{note.title}</h3>
-                                    <p className={`text-sm line-clamp-1 leading-relaxed ${isDark ? 'text-gray-100 ' : 'text-gray-800 '}`}>{note.description}</p>
+                                    <h3 className={`text-lg font-semibold  line-clamp-2 pr-6 capitalize ${isDark ? 'text-gray-100 ' : 'text-gray-800 '}`}>{note.title||(note.content && note.content[0] ? `${note.content[0].substring(0, 30)}...` : 'Untitled Note')}</h3>
+                                    <p className={`text-sm line-clamp-1 leading-relaxed ${isDark ? 'text-gray-100 ' : 'text-gray-800 '}`}>{note.description||(note.content && note.content[0]) || "No content provided."}</p>
                                     {note.imageUrl && (
                                         <img draggable="false" src={`http://localhost:4000${note.imageUrl}`} alt={note.title} className="my-3 rounded-lg object-cover max-h-48 w-full" />
                                     )}

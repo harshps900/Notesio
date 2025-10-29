@@ -11,6 +11,7 @@ dotEnv.config();
 import data from './Config/data.js';
 import authRouter from "./Routes/authRouter.js";
 import noteRouter from './Routes/noteRouter.js'
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -49,7 +50,7 @@ app.use((req, res, next) => {
 app.use('/api/notes', noteRouter);
 
 app.get('/', (req, res) => {
-    res.json({ mesaage: "Api Working well" })
+    res.json({ message: "Api Working well" }) 
 })
 
 io.on("connection", (socket) => {

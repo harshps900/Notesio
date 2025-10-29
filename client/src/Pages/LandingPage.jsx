@@ -1,6 +1,5 @@
 import hero from '../assets/hero.png'
 import { useNavigate } from "react-router-dom"
-import rightLine from '../assets/arrow.png'
 import pen from '../assets/pen.png'
 import Box from "@mui/material/Box"
 import Tab from "@mui/material/Tab"
@@ -88,7 +87,7 @@ export default function LandingPage() {
     }));
     const handleSubmit = async (e) => {
         e.preventDefault()
-        console.log(data)
+        console.log('hii')
     }
     return (
         <>
@@ -292,7 +291,7 @@ export default function LandingPage() {
                                             />
                                         </div>
                                     </TabPanel>
-                                    <TabPanel value="3" >
+                                    <TabPanel value="3" >d
                                         <div className='flex flex-col lg:flex-row justify-between items-center gap-10'>
                                             <div className='flex flex-col gap-4 max-w-xl'>
                                                 <h1 className={`font-semibold text-2xl ${isDark ? ' text-gray-100' : 'text-indigo-500'}`}>Powerfull features you can't miss!!!</h1>
@@ -300,7 +299,7 @@ export default function LandingPage() {
                                                     <li className={`conatiner  contain-content ${isDark ? ' text-gray-100' : 'text-indigo-500'}`}>
                                                         ✔️ <span className='font-semibold'>Custom Color:</span> <br />
                                                         <span className='text-justify px-2'>
-                                                            Customize your note color according to your mood.😉
+                                                            Customize your note color according to your mood.
                                                             <span className='text-justify px-2'>Multiple options in Colors</span>
                                                         </span></li>
                                                     <li className={`conatiner  contain-content ${isDark ? ' text-gray-100' : 'text-indigo-500'}`}>

@@ -6,8 +6,9 @@ import mongoose from 'mongoose';
 import Status from '../Model/StatusModel.js';
 
 
+
 export const createNote = async (req, res) => {
-    const { title, description, color, priority, status, } = req.body;
+    const { title, description, color, status, } = req.body;
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : '';
 
     if (!title) {
@@ -17,22 +18,25 @@ export const createNote = async (req, res) => {
         const note = await Notes.create({
             title,
             description,
-            color: color || null, // Ensure color is saved, even if null
+            color: color || null,
             status: status || 'onStart',
             imageUrl,
             // tags,
             userId: req.user.id
         });
+        // Populate the userId field before sending the response
+        await note.populate('userId', 'name');
         // Emit to all clients except the sender
         if (req.io && req.user.socketId) {
             req.io.except(req.user.socketId).emit("noteCreated", note);
         }
-        return res.status(201).json({ success: true, message: "Note created successfully", note })
+        return res.status(201).json({ success: true, message: "Note created successfully", note });
     } catch (error) {
         console.log(error)
         return res.status(500).json({ success: false, message: "Server error while creating note." });
     }
 }
+
 export const allNotes = async (req, res) => {
     try {
         const userId = req.user.id;
@@ -55,17 +59,24 @@ export const allNotes = async (req, res) => {
 
 export const editNote = async (req, res) => {
     const { id } = req.params;
-    const { title, description, color, priority, status, } = req.body;
+    const { title, description, color, priority, status, content } = req.body;
     const updateData = { lastEditedBy: req.user.id };
 
     // Only add fields to updateData if they are provided in the request
     if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description;
+    if (content !== undefined) updateData.content = content;
     if (color !== undefined) updateData.color = color;
     if (priority !== undefined) updateData.priority = priority;
     if (status !== undefined) updateData.status = status;
     // if (tags !== undefined) updateData.tags = tags;
-
+    const plainTitle = content.substring(0, content.indexOf('\n') !== -1 ? content.indexOf('\n') : content.length).trim() || 'Untitled Note';
+    const plainDescription = content.substring(content.indexOf('\n') + 1).trim() || '';
+    if (!title && content) {
+        updateData.title = plainTitle;
+        updateData.description = plainDescription;
+    }
+    
     try {
         const note = await Notes.findById(id);
         if (!note) {
@@ -168,6 +179,7 @@ export const updateNoteDetails = async (req, res) => {
         return res.status(500).json({ success: false, message: "Server error while updating note details." });
     }
 };
+
 // Delete Note
 export const SoftDeleteNote = async (req, res) => {
     const { id } = req.params;
@@ -288,6 +300,7 @@ export const getTrashNotes = async (req, res) => {
         return res.status(500).json({ success: false, message: "Server error while fetching trash." });
     }
 };
+
 // permanent delete the note
 export const deletePermanently = async (req, res) => {
     const { id } = req.params;
@@ -334,6 +347,9 @@ export const restoreNote = async (req, res) => {
 
     try {
         const note = await Notes.findById(id);
+        await note.populate('userId', 'name');
+        await note.populate('sharedWith.user', 'name email');
+        await note.populate('lastEditedBy', 'name');
         if (!note) {
             return res.status(404).json({ success: false, message: "Note not found in trash." });
         }
@@ -349,8 +365,12 @@ export const restoreNote = async (req, res) => {
             return res.status(403).json({ success: false, message: "You are not authorized to restore this note." });
         }
 
-        await Notes.findByIdAndUpdate(id, { isDeleted: false }, { new: true });
-        return res.status(200).json({ success: true, message: "Note restored successfully" });
+        const restoredNote = await Notes.findByIdAndUpdate(id, { isDeleted: false }, { new: true })
+            .populate('userId', 'name')
+            .populate('sharedWith.user', 'name email')
+            .populate('lastEditedBy', 'name');
+
+        return res.status(200).json({ success: true, message: "Note restored successfully", note: restoredNote });
     } catch (error) {
         console.error("Error restoring note:", error);
         return res.status(500).json({ success: false, message: "Server error while restoring note." });
@@ -375,8 +395,6 @@ export const deleteAllNotes = async (req, res) => {
     }
 }
 
-
-
 export const createStatus = async (req, res) => {
     const { name } = req.body;
     const userId = req.user.id;
@@ -396,6 +414,7 @@ export const createStatus = async (req, res) => {
         res.status(500).json({ success: false, message: "Server error while creating status." });
     }
 };
+
 export const getStatuses = async (req, res) => {
     try {
         const userId = req.user.id;
@@ -412,6 +431,7 @@ export const getStatuses = async (req, res) => {
         res.status(500).json({ success: false, message: "Server error while fetching statuses." });
     }
 };
+
 export const deleteStatus = async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
@@ -438,5 +458,32 @@ export const deleteStatus = async (req, res) => {
 
     } catch (error) {
         console.error("Error deleting status:", error)
+    }
+}
+
+export const createPlainNote = async (req, res) => {
+    const { content } = req.body;
+    if (!content) {
+        return res.status(400).json({ success: false, message: "Content is required" });
+    }
+    try {
+
+        const title = content.substring(0, content.indexOf('\n') !== -1 ? content.indexOf('\n') : content.length).trim() || 'Untitled Note';
+        const description = content.substring(content.indexOf('\n') + 1).trim() || '';
+        const newNote = await Notes.create({
+            title,
+            description,
+            content,
+            userId: req.user.id
+        });
+        // Populate the userId field before sending the response
+        await newNote.populate('userId', 'name');
+        if (req.io && req.user.socketId) {
+            req.io.except(req.user.socketId).emit("noteCreated", newNote);
+        }
+        res.status(201).json({ success: true, message: "Plain note created successfully", note: newNote });
+    } catch (error) {
+        console.error("Error creating plain note:", error);
+        res.status(500).json({ success: false, message: "Server error while creating plain note." });
     }
 }

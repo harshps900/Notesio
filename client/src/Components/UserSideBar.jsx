@@ -1,6 +1,6 @@
 import { useTheme } from "../Context/ThemeProvider"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faGears, faHeart, faHome, faTrash, faUser } from "@fortawesome/free-solid-svg-icons"
+import { faGears,  faHome,  faUser } from "@fortawesome/free-solid-svg-icons"
 export default function UserSideBar({
     isUserHomeClick, toggleUserHome,
     isProfileClick, toggleProfile,

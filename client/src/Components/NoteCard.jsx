@@ -1,14 +1,16 @@
-import { useState, useRef, useEffect, use } from "react";
+import { useState, useRef, useEffect,  } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEllipsisVertical, faPencil, faTrash, faShareNodes, faEye, faClock, faStar, faHamburger, faBars, faDownload } from "@fortawesome/free-solid-svg-icons";
+import { faEllipsisVertical, faPencil, faTrash, faShareNodes, faEye, faClock, faStar,  faBars, faDownload } from "@fortawesome/free-solid-svg-icons";
 import { useTheme } from "../Context/ThemeProvider";
-import { format, isToday, isYesterday, set } from 'date-fns';
+import { format, isToday, isYesterday } from 'date-fns';
 import { HexColorPicker } from "react-colorful";
 import { useDraggable } from "@dnd-kit/core";
 import color from '../assets/color.png'
 import DownloadFile from "./DownloadFile";
 import { PDFDownloadLink } from "@react-pdf/renderer";
-export default function NoteCard({ note, onEdit, onDelete, onShare, onToggleFavourite, onColorChange, permission = null, noteDetail, }) {
+
+
+export default function NoteCard({ note, onEdit, onDelete, onShare, onToggleFavourite, onColorChange, permission = null, noteDetail }) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
     const menuRef = useRef(null);
@@ -101,27 +103,6 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onToggleFavo
         action();
     };
 
-    // generate color for tags 
-    // const handelTagsColor=(tag)=>{
-    //     const colors = [
-    //         isDark ? '#4A5568' : '#E2E8F0', // gray
-    //         isDark ? '#9B2C2C' : '#FEB2B2', // red
-    //         isDark ? '#975A16' : '#FBD38D', // orange
-    //         isDark ? '#B7791F' : '#F6E05E', // yellow
-    //         isDark ? '#2F855A' : '#9AE6B4', // green
-    //         isDark ? '#2C7A7B' : '#81E6D9', // teal
-    //         isDark ? '#2B6CB0' : '#90CDF4', // blue
-    //         isDark ? '#553C9A' : '#B794F4', // purple
-    //         isDark ? '#97266D' : '#FBB6CE', // pink
-    //     ];
-    //     let total = 0;
-    //     for (let i = 0; i < String(tag).length; i++) {
-    //         total += String(tag).charCodeAt(i);
-    //     }
-    //     return colors[total % colors.length];
-    // }
-
-
     return (
         <div
             ref={setNodeRef}
@@ -151,13 +132,13 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onToggleFavo
                         noteDetail();
                     }}
                 >
-                    {note.title}
+                    {note.title || (note.content && note.content[0] ? `${note.content[0].substring(0, 30)}...` : 'Untitled Note')}
                 </h2>
                 <div
                     ref={menuRef}
                     className="relative flex">
                     {/* Custom color picker */}
-                    {canEdit && (
+                    
                         <div className="relative mr-2 ">
                             <button
                                 onClick={handleColorPickerClick}
@@ -172,13 +153,12 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onToggleFavo
                             {isColorPickerOpen && (
                                 <div
                                     ref={menuRef}
-                                    className="absolute top-full -right-10 mt-2  p-2 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600"
+                                    className="absolute top-full -right-10 mt-2 z-50  p-2 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600"
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     <HexColorPicker
                                         color={note.color || generateColorForId(note._id)}
                                         onChange={(newColor) => onColorChange(note._id, newColor)}
-
                                     />
                                     <button
                                         className="mt-2 w-full text-sm px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded"
@@ -191,7 +171,7 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onToggleFavo
                                 </div>
                             )}
                         </div>
-                    )}
+                    
                     <button
                         className={`p-1.5 rounded-full ${isDark ? 'text-gray-100 hover:bg-white/20 hover:text-gray-100' : 'text-gray-200 hover:bg-white/50 hover:text-gray-700'} transition-colors`}
                         onClick={handleMenuClick}
@@ -234,7 +214,7 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onToggleFavo
                             </button>
                             <PDFDownloadLink
                                 document={<DownloadFile note={note} />}
-                                fileName={`${note.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`}
+                                fileName={`${(note.title || (note.content && note.content[0]) || 'untitled').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`}
                                 style={{ textDecoration: 'none' }}
                             >
                                 {({ loading }) => (
@@ -254,15 +234,18 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onToggleFavo
 
             {/* Note content */}
             <div className="flex-grow overflow-hidden mb-4">
-                <p
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        noteDetail();
-                    }}
-                    className={`text-sm line-clamp-1 leading-relaxed cursor-pointer ${textColorClass}`}
-                >
-                    {note.description}
-                </p>
+                
+                    <p
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            noteDetail();
+                        }}
+                        className={`text-sm line-clamp-1 leading-relaxed cursor-pointer ${textColorClass}`}
+                    >
+                        {note.description || (note.content && note.content[0]) || "No content provided."} 
+                    </p>
+                    
+                
                 {/* Image */}
                 {note.imageUrl && (
                     <img
@@ -275,7 +258,7 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onToggleFavo
                         }}
                     />
                 )}
-                
+
             </div>
             {/* Footer with metadata */}
             <div className="mt-auto pt-3 border-t border-white/50 flex justify-between items-center">

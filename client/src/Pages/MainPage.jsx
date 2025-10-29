@@ -10,11 +10,13 @@ import NoteField from "../Components/ReusableComponents/NoteField";
 import swal from "sweetalert";
 import SideBar from "../Components/SideBar";
 import Trash from "../Components/Trash";
-import FavNotes from '../Components/FavNotes'
+import FavNote from '../Components/FavNotes'
 import noteTa from '../assets/noteTa.png'
 import DisplayNotes from "../Components/DisplayNotes";
 import NoteColumn from '../Components/NoteColumn'
 import NoteStatus from "../Components/ReusableComponents/StatusField";
+import Editor from "../Components/Editor";
+import { motion } from "framer-motion";
 
 
 export default function MainPage() {
@@ -28,20 +30,24 @@ export default function MainPage() {
     const [shareEmail, setShareEmail] = useState("");
     const [sharePermission, setSharePermission] = useState("view");
     // open and close states
-    const [value, setValue] = useState("1")
+    // const [value, setValue] = useState("1")
     const [isHomeCLick, setIsHomeClick] = useState(false);
     const [isNoteOpen, setIsNoteOpen] = useState(false);
     const [isFavouritesClick, setIsFavouritesClick] = useState(false);
     const [isTrashClick, setIsTrashClick] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     // other states
-    const { isDark, toggleTheme } = useTheme();
+    const { isDark } = useTheme();
     const { showToast, user } = useAuth();
     const [searchterm, setSearchTerm] = useState("");
     // state change
     const [noteColumns, setNoteColumns] = useState([])
-    const [newColumnName, setNewColumnName] = useState('')
     const [isColOpen, setIsColOpen] = useState(false)
+    // create note
+    const [plainNote, setPlainNote] = useState('<p>Start typing...</p>');
+    const [editingPlainNote, setEditingPlainNote] = useState(null); // State to hold the plain note being edited
+    const [isCreateOpen, setIsCreateOpen] = useState(false)
+
     // keep socket ref so it's stable across renders
     const socketRef = useRef(null);
 
@@ -78,6 +84,9 @@ export default function MainPage() {
     const toggleMenu = () => {
         setIsMenuOpen(prev => !prev);
     }
+    const toggleCreate = () => {
+        setIsCreateOpen(prev => !prev)
+    }
 
     const toggleCol = () => {
         setIsColOpen(prev => !prev)
@@ -90,13 +99,12 @@ export default function MainPage() {
     // Safety: ensure note/user exist
     const getPermission = (note) => {
         if (!note || !user?._id) return null;
-        if (note.userId?._id === user._id) return "edit"; // owner
+        if (note.userId?._id === user._id) return "edit";
         const shareInfo = note.sharedWith?.find(
             (s) => s.user?._id === user._id
         );
         return shareInfo?.permission || null;
     };
-
     // fetch notes
     const fetchNotes = async () => {
         try {
@@ -136,7 +144,7 @@ export default function MainPage() {
         const data = new FormData();
         data.append("title", formData.title);
         data.append("description", formData.description);
-        // data.append("tags",formData.tags)
+
         if (formData.color) data.append("color", formData.color);
         if (formData.image && formData.image[0]) {
             data.append("image", formData.image[0]);
@@ -162,6 +170,63 @@ export default function MainPage() {
             showToast("Failed to create note", "error");
         }
     };
+    const handlePlainNoteCreate = async () => {
+        if (!plainNote || !plainNote.trim()) {
+            return showToast("Note cannot be empty.", "warning");
+        }
+        try {
+            const res = await axios.post(
+                "http://localhost:4000/api/notes/plain",
+                { content: plainNote },
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                }
+            );
+            if (res.data.success) {
+                showToast("Note created successfully", "success");
+                setNotes(prev => [res.data.note, ...prev]);
+                setPlainNote(''); // Clear the editor after creation
+                setEditingPlainNote(null);
+                setIsCreateOpen(false); // Close the modal
+            }
+        } catch (error) {
+            console.log(error);
+            showToast("Failed to create note", "error");
+        }
+    }
+
+    const handleUpdatePlainNote = async () => {
+        if (!editingPlainNote || !plainNote || !plainNote.trim()) {
+            return showToast("Note content cannot be empty.", "warning");
+        }
+
+        try {
+            const res = await axios.put(
+                `http://localhost:4000/api/notes/edit/${editingPlainNote._id}`,
+                { content: plainNote },
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                }
+            );
+
+            if (res.data.success) {
+                showToast("Note updated successfully", "success");
+                setNotes(prev => prev.map(n => n._id === res.data.note._id ? res.data.note : n));
+                toggleCreate();
+                setEditingPlainNote(null);
+                setPlainNote('');
+            }
+        } catch (error) {
+            console.error("Failed to update plain note:", error);
+            showToast("Failed to update note.", "error");
+        }
+    };
 
     // Generic update function
     const updateNote = async (noteId, updateData) => {
@@ -179,8 +244,9 @@ export default function MainPage() {
                 }
             );
             if (res.data.success) {
-                // Replace with the final version from the server
+
                 setNotes(prev => prev.map(n => n._id === res.data.note._id ? res.data.note : n));
+
             } else {
                 throw new Error(res.data.message || "Update failed");
             }
@@ -387,19 +453,26 @@ export default function MainPage() {
     useEffect(() => {
         const filtered = notes.filter((note) =>
             (note.title || "").toLowerCase().includes(searchterm.toLowerCase()) ||
-            (note.description || "").toLowerCase().includes(searchterm.toLowerCase())
+            (note.description || "").toLowerCase().includes(searchterm.toLowerCase()) ||
+            (note.content && note.content.some(c => c.toLowerCase().includes(searchterm.toLowerCase())))
         );
         setFilteredNotes(filtered);
     }, [searchterm, notes]);
 
     // onEdit open and join a single room
     const onEdit = (note) => {
-        setCurrentNote(note);
-        setIsNoteOpen(true);
-        const socket = socketRef.current;
-        if (socket && note && note._id) {
-            socket.emit("joinNoteRoom", note._id);
+        // Check if it's a plain note (has content but no title)
+        if (note.content && note.content.length > 0) {
+            setEditingPlainNote(note);
+            setPlainNote(note.content[0] || '');
+            setIsCreateOpen(true);
+        } else {
+            // It's a regular note with a title
+            setCurrentNote(note);
+            setIsNoteOpen(true);
         }
+        const socket = socketRef.current;
+        if (socket && note?._id) socket.emit("joinNoteRoom", note._id);
     };
 
     const handleDragEnd = (event) => {
@@ -469,6 +542,11 @@ export default function MainPage() {
         }
     };
 
+    const handleRestore = (restoredNote) => {
+
+        setNotes(prev => [restoredNote, ...prev]);
+    };
+
     return (
         <div className={`w-full  md:fixed h-screen flex flex-col ${isDark ? ' bg-gray-800' : 'bg-white'}`}>
             <NavBar searchterm={searchterm} setSearchTerm={setSearchTerm} menu={toggleMenu} />
@@ -505,6 +583,7 @@ export default function MainPage() {
                                                     onShare={(e, n) => { e.stopPropagation(); setShareModal({ open: true, note: n }); }}
                                                     onColorChange={handleColorChange}
                                                     onDeleteStatus={handleDeleteStatus}
+
                                                 />
                                             ))
                                         ) : (
@@ -542,39 +621,40 @@ export default function MainPage() {
                                     </div>
                                 )}
                             </div>
-
                         </>
                     )}
                     {isFavouritesClick && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ml-2 mt-4  md:gap-6">
-                            {favouriteNotes.length > 0 ? (
-                                favouriteNotes.map((note) => {
-                                    const perm = getPermission(note);
-                                    return (
-                                        <FavNotes
-                                            key={note._id}
-                                            note={note}
-                                            permission={perm}
-                                            noteDetail={() => setNoteDetail(note)}
-                                            onEdit={() => onEdit(note)}
-                                            onDelete={() => onDelete(note._id)}
-                                            onToggleFavourite={onToggleFavourite}
-                                            onShare={() => setShareModal({ open: true, note: note })}
-                                        />
-                                    );
-                                })
-                            ) : (
-                                <div className="flex  flex-col  h-screen w-full">
-                                    <h1 className={`text-2xl ${isDark ? 'text-gray-100' : 'text-gray-800'} font-bold mb-6`}> Favourite Notes</h1>
-                                    <div className="flex flex-col items-center ml-80 justify-center h-full w-full">
-                                        <p className={`text-2xl font-serif ${isDark ? 'text-gray-100' : 'text-gray-700'} font-bold mb-6`}>No favourite notes yet.</p>
+                        <div className="p-6 w-full">
+                            <h1 className={`text-2xl ${isDark ? 'text-gray-100' : 'text-gray-800'} font-bold mb-6`}>Favourite Notes</h1>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                                {favouriteNotes.length > 0 ? (
+                                    favouriteNotes.map((note) => {
+                                        const perm = getPermission(note);
+                                        return (
+                                            <FavNote
+                                                key={note._id}
+                                                note={note}
+                                                permission={perm}
+                                                noteDetail={() => setNoteDetail(note)}
+                                                onEdit={() => onEdit(note)}
+                                                onDelete={() => onDelete(note._id)}
+                                                onToggleFavourite={onToggleFavourite}
+                                                onShare={() => setShareModal({ open: true, note: note })}
+                                            />
+                                        );
+                                    })
+                                ) : (
+                                    <div className="flex  flex-col  h-screen w-full">
+                                        <div className="flex flex-col items-center ml-80 justify-center h-full w-full">
+                                            <p className={`text-2xl font-serif ${isDark ? 'text-gray-100' : 'text-gray-700'} font-bold mb-6`}>No favourite notes yet.</p>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     )}
                     {isTrashClick && (
-                        <Trash />
+                        <Trash onNoteRestored={handleRestore} />
                     )}
                 </div>
             </div>
@@ -585,40 +665,74 @@ export default function MainPage() {
             >
                 <p className="text-center mb-2">+</p>
             </button>
+            <button
+                onClick={toggleCreate}
+                className="fixed bottom-8 right-28 cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white text-3xl rounded-full h-14 w-14 flex items-center justify-center shadow-lg transition"
+            >
+                <p className="text-center mb-2">+</p>
+            </button>
+            {isCreateOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center  bg-black/20 backdrop:blur-2xl bg-opacity-40">
+                    <div className={` rounded-2xl shadow-2xl w-full max-w-2xl p-6 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                        <div className={`flex justify-between items-center border-b ${isDark ? ' border-gray-200 ' : 'border-gray-200'} pb-2 mb-4`}>
+                            <p className={`text-xl font-semibold  ${isDark ? 'text-gray-100' : 'text-gray-800'} `}>
+                                {editingPlainNote ? 'Edit Plain Note' : 'Create Plain Note'}
+                            </p>
+                            <button onClick={toggleCreate} className={` hover:text-red-500 text-2xl ${isDark ? 'text-gray-100' : 'text-gray-400'}`}>×</button>
+                        </div>
+                        <Editor value={plainNote} onChange={setPlainNote} />
+                        <button onClick={editingPlainNote ? handleUpdatePlainNote : handlePlainNoteCreate} className={`w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md transition-colors`}>{editingPlainNote ? 'Update Note' : 'Create Note'}</button>
 
+                    </div>
+                </div>
+            )}
             {/* Create Note Modal */}
             {isNoteOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center  bg-black/20 backdrop:blur-2xl bg-opacity-40">
-                    <div className={` rounded-2xl shadow-2xl w-full max-w-lg p-6 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                    <motion.div
+                        animate={{ y: 10, opacity: 1 }}
+                        initial={{ opacity: 0 }}
+                        whileTap={{ scale: 0.98 }}
+                        transition={{
+                            duration: 0.8,
+                            delay: 0.5
+                        }}
+                        exit={{ opacity: 0 }} className={` rounded-2xl shadow-2xl w-full max-w-lg p-6 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
                         <div className={`flex justify-between items-center border-b ${isDark ? ' border-gray-200 ' : 'border-gray-200'} pb-2 mb-4`}>
                             <p className={`text-xl font-semibold  ${isDark ? 'text-gray-100' : 'text-gray-800'} } `}>{currentNote ? `Edit Note` : "Create Note"}</p>
                             <button onClick={toggleNote} className={` hover:text-red-500 text-2xl ${isDark ? 'text-gray-100' : 'text-gray-400'}`}>×</button>
                         </div>
-                                    <Form
-                                        fields={NoteField}
-                                        onSubmit={(v) => { currentNote ? handleUpdateNote(v, currentNote._id) : handleCreateNote(v); }}
-                                        initialValue={currentNote}
-                                        buttonClassName="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md transition-colors"
-                                        buttonText={currentNote ? "Edit Note" : "Create Note"}
-                                    />
-                                
-
-                    </div>
+                        <Form
+                            fields={NoteField}
+                            onSubmit={(v) => { currentNote ? handleUpdateNote(v, currentNote._id) : handleCreateNote(v); }}
+                            initialValue={currentNote}
+                            buttonClassName="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md transition-colors"
+                            buttonText={currentNote ? "Edit Note" : "Create Note"}
+                        />
+                    </motion.div>
                 </div>
             )}
 
             {/* Note Detail Modal */}
             {noteDetail && (
-                <div className={`fixed inset-0 z-50 flex  items-center justify-center  `} onClick={() => setNoteDetail(null)}>
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ y: 10, opacity: 1 }}
+                    transition={{
+                        duration: 0.8,
+                        delay: 0.5
+                    }}
+                    exit={{ opacity: 0 }}
+                    className={`fixed inset-0 z-50 flex  items-center justify-center  `} onClick={() => setNoteDetail(null)}>
                     <DisplayNotes note={noteDetail} onClose={() => setNoteDetail(null)} />
-                </div>
+                </motion.div>
             )}
 
             {/* Share Note Modal */}
             {shareModal.open && (
                 <div className={`fixed flex items-center justify-center inset-0 z-50 bg-black/20 backdrop:blur-2xl bg-opacity-40  `}>
                     <div className={` rounded-lg shadow-2xl  w-full max-w-md p-6 ${isDark ? 'bg-gray-700' : 'bg-white'} `}>
-                        <h2 className={`text-lg ${isDark ? 'text-gray-100' : 'text-gray-800'} font-semibold mb-4`}>Share "{shareModal.note?.title ?? ''}"</h2>
+                        <h2 className={`text-lg ${isDark ? 'text-gray-100' : 'text-gray-800'} font-semibold mb-4`}>Share "{shareModal.note?.title || (shareModal.note?.content[0] || 'Untitled')}"</h2>
                         <input
                             type="email"
                             placeholder="Enter user email"

@@ -1,5 +1,5 @@
 import express from 'express'
-import { createNote, allNotes, editNote, SoftDeleteNote, shareNote, getTrashNotes, deletePermanently, restoreNote, deleteAllNotes,  updateNoteDetails, createStatus, getStatuses,deleteStatus } from '../Controller/NoteController.js'
+import { createNote, allNotes, editNote, SoftDeleteNote, shareNote, getTrashNotes, deletePermanently, restoreNote, deleteAllNotes,  updateNoteDetails, createStatus, getStatuses,deleteStatus,createPlainNote } from '../Controller/NoteController.js'
 import { middleware as authMiddleware } from '../middleware/middleware.js'
 import upload from '../Middleware/multer.js';
 const noteRouter = express.Router()
@@ -18,5 +18,8 @@ noteRouter.delete('/deleteAll', authMiddleware, deleteAllNotes)
 noteRouter.get('/statuses', authMiddleware, getStatuses);
 noteRouter.post('/statuses', authMiddleware, createStatus);
 noteRouter.delete('/statuses/:id', authMiddleware, deleteStatus);
+
+// router for plain note creation
+noteRouter.post('/plain', authMiddleware, createPlainNote);
 
 export default noteRouter

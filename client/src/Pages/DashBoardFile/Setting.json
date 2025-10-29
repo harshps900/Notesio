@@ -1,0 +1,336 @@
+{
+    "layout": {
+        "sectionOrder": [
+            "systemOverView",
+            "SecurityHealth",
+            "expirationManagement",
+            "appAnalytics",
+            "topTenants",
+            "userLogs"
+        ],
+        "cardOrders": {
+            "systemOverView": [
+                "totalTenants",
+                "totalApplications",
+                "totalUsers",
+                "activeSessions",
+                "activeApps",
+                "inactiveApps",
+                "suspiciousActivity"
+            ],
+            "SecurityHealth": [
+                "providerSuccess",
+                "authTimeSeries"
+            ],
+            "expirationManagement": [
+                "serviceProviderExpires",
+                "userRoleExpires",
+                "portalUsageByRole"
+            ],
+            "appAnalytics": [
+                "mostUsedApps",
+                "deviceList",
+                "unUsedApps"
+            ],
+            "topTenants": [
+                "topTenantsByUser",
+                "mostUsedAppByTenants",
+                "userLocation"
+            ],
+            "userLogs": [
+                "logActivity"
+            ]
+        }
+    },
+    "widgets": {
+        "systemOverView": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": null,
+                "resized_Card": null
+            }
+        },
+        "totalTenants": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": {
+                    "height": 150,
+                    "width": "100%"
+                },
+                "resized_Card": {
+                    "height": 180,
+                    "width": 228
+                }
+            }
+        },
+        "totalApplications": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": {
+                    "height": 150,
+                    "width": "100%"
+                },
+                "resized_Card": {
+                    "height": 150,
+                    "width": "100%"
+                }
+            }
+        },
+        "totalUsers": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": {
+                    "height": 150,
+                    "width": "100%"
+                },
+                "resized_Card": {
+                    "height": 150,
+                    "width": "100%"
+                }
+            }
+        },
+        "activeSessions": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": {
+                    "height": 150,
+                    "width": "100%"
+                },
+                "resized_Card": {
+                    "height": 150,
+                    "width": "100%"
+                }
+            }
+        },
+        "activeApps": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": {
+                    "height": 150,
+                    "width": "100%"
+                },
+                "resized_Card": {
+                    "height": 150,
+                    "width": "100%"
+                }
+            }
+        },
+        "inactiveApps": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": {
+                    "height": 150,
+                    "width": "100%"
+                },
+                "resized_Card": {
+                    "height": 150,
+                    "width": "100%"
+                }
+            }
+        },
+        "suspiciousActivity": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": {
+                    "height": 150,
+                    "width": "100%"
+                },
+                "resized_Card": {
+                    "height": 150,
+                    "width": "100%"
+                }
+            }
+        },
+        "SecurityHealth": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": null,
+                "resized_Card": null
+            }
+        },
+        "providerSuccess": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": {
+                    "height": 520,
+                    "width": "100%"
+                },
+                "resized_Card": {
+                    "height": 520,
+                    "width": "100%"
+                }
+            }
+        },
+        "authTimeSeries": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": {
+                    "height": 520,
+                    "width": "100%"
+                },
+                "resized_Card": {
+                    "height": 520,
+                    "width": "100%"
+                }
+            }
+        },
+        "expirationManagement": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": null,
+                "resized_Card": null
+            }
+        },
+        "serviceProviderExpires": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": {
+                    "height": 400,
+                    "width": "100%"
+                },
+                "resized_Card": {
+                    "height": 400,
+                    "width": "100%"
+                }
+            }
+        },
+        "userRoleExpires": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": {
+                    "height": 400,
+                    "width": "100%"
+                },
+                "resized_Card": {
+                    "height": 400,
+                    "width": "100%"
+                }
+            }
+        },
+        "portalUsageByRole": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": {
+                    "height": 400,
+                    "width": "100%"
+                },
+                "resized_Card": {
+                    "height": 400,
+                    "width": "100%"
+                }
+            }
+        },
+        "appAnalytics": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": null,
+                "resized_Card": null
+            }
+        },
+        "mostUsedApps": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": {
+                    "height": 700,
+                    "width": "100%"
+                },
+                "resized_Card": {
+                    "height": 700,
+                    "width": "100%"
+                }
+            }
+        },
+        "deviceList": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": {
+                    "height": 700,
+                    "width": "100%"
+                },
+                "resized_Card": {
+                    "height": 700,
+                    "width": "100%"
+                }
+            }
+        },
+        "unUsedApps": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": {
+                    "height": 700,
+                    "width": "100%"
+                },
+                "resized_Card": {
+                    "height": 700,
+                    "width": "100%"
+                }
+            }
+        },
+        "topTenants": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": null,
+                "resized_Card": null
+            }
+        },
+        "topTenantsByUser": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": {
+                    "height": 550,
+                    "width": "100%"
+                },
+                "resized_Card": {
+                    "height": 550,
+                    "width": "100%"
+                }
+            }
+        },
+        "mostUsedAppByTenants": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": {
+                    "height": 550,
+                    "width": "100%"
+                },
+                "resized_Card": {
+                    "height": 550,
+                    "width": "100%"
+                }
+            }
+        },
+        "userLocation": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": {
+                    "height": 550,
+                    "width": "100%"
+                },
+                "resized_Card": {
+                    "height": 550,
+                    "width": "100%"
+                }
+            }
+        },
+        "userLogs": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": null,
+                "resized_Card": null
+            }
+        },
+        "logActivity": {
+            "is_visible": "show",
+            "CSS": {
+                "default_Size": {
+                    "height": 560,
+                    "width": "100%"
+                },
+                "resized_Card": {
+                    "height": 560,
+                    "width": "100%"
+                }
+            }
+        }
+    }
+}

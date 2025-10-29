@@ -57,16 +57,24 @@ export default function FavNote({ note, onEdit, onDelete, onShare, permission = 
     const canEdit = permission === 'edit';
     const canShare = permission === 'edit' || permission === 'view';
 
-    return (
-        <>
+    const isColorDark = (hexColor) => {
+        if (!hexColor) return false;
+        const hex = hexColor.replace('#', '');
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        return (0.299 * r + 0.587 * g + 0.114 * b) < 128;
+    };
 
-            <div className="p-6 w-full">
-                <h1 className="text-2xl font-bold mb-6">Favourite Note</h1>
-                <div className={`rounded-xl p-5 ${generateColorForId(note._id)} border h-full shadow-sm hover:shadow-md transition-all duration-200 flex flex-col relative group`}>
+    const noteColor = note.color || generateColorForId(note._id);
+    const textColorClass = isColorDark(noteColor) ? 'text-gray-100' : 'text-gray-800';
+
+    return (
+        <div className={`rounded-xl p-5 border h-full shadow-sm hover:shadow-md transition-all duration-200 flex flex-col relative group`} style={{ backgroundColor: noteColor, borderColor: isDark ? '#4A5568' : '#E2E8F0' }}>
                     {/* Header with title and menu */}
                     <div className="flex justify-between items-start mb-3">
-                        <h2 className={`text-lg font-semibold  line-clamp-2 pr-6 capitalize ${isDark ? 'text-gray-100 ' : 'text-gray-800 '}`}>
-                            {note.title}
+                <h2 className={`text-lg font-semibold pr-6 capitalize cursor-pointer ${textColorClass}`} onClick={noteDetail}>
+                    {note.title || (note.content && note.content[0] ? `${note.content[0].substring(0, 30)}...` : 'Untitled Note')}
                         </h2>
                         <div
                             ref={menuRef}
@@ -110,8 +118,8 @@ export default function FavNote({ note, onEdit, onDelete, onShare, permission = 
                         </div>
                     </div>
                     <div className="flex-grow overflow-hidden mb-0">
-                        <p onClick={noteDetail} className={`text-sm line-clamp-1 leading-relaxed ${isDark ? 'text-gray-100 ' : 'text-gray-800 '}`}>
-                            {note.description}
+                <p onClick={noteDetail} className={`text-sm line-clamp-1 leading-relaxed cursor-pointer ${textColorClass}`}>
+                    {note.description || (note.content && note.content[0]) || "No content provided."}
                         </p>
                     </div>
                     {note.imageUrl && (
@@ -121,7 +129,7 @@ export default function FavNote({ note, onEdit, onDelete, onShare, permission = 
 
                     {/* Footer with metadata */}
                     <div className="mt-auto pt-3 border-t border-white/50 flex justify-between items-center">
-                        <div className={`flex items-center text-xs ${isDark ? 'text-gray-100 ' : 'text-gray-500 '}`}>
+                <div className={`flex items-center text-xs ${textColorClass} ${isColorDark(noteColor) ? 'text-gray-200' : 'text-gray-500'}`}>
                             <FontAwesomeIcon icon={faClock} className="mr-1 text-xs" />
                             <span>{formatDate(note.updatedAt || note.createdAt)}</span>
                         </div>
@@ -134,8 +142,6 @@ export default function FavNote({ note, onEdit, onDelete, onShare, permission = 
 
                         )}
                     </div>
-                </div>
-            </div>
-        </>
+        </div>
     );
 }

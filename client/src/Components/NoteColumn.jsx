@@ -1,16 +1,16 @@
 import { useDroppable } from "@dnd-kit/core"
-import { useState } from "react"
 import NoteCard from "./NoteCard"
 import { useTheme } from "../Context/ThemeProvider"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrashAlt } from "@fortawesome/free-solid-svg-icons";
-import Accordion, { accordionClasses } from '@mui/material/Accordion';
-import AccordionSummary from '@mui/material/AccordionSummary';
-import AccordionDetails, {
-    accordionDetailsClasses,
-} from '@mui/material/AccordionDetails';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+// import Accordion, { accordionClasses } from '@mui/material/Accordion';
+// import AccordionSummary from '@mui/material/AccordionSummary';
+// import AccordionDetails, {
+//     accordionDetailsClasses,
+// } from '@mui/material/AccordionDetails';
+// import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Fade from '@mui/material/Fade';
+
 export default function NoteColumn({
     col,
     notes,
@@ -21,7 +21,7 @@ export default function NoteColumn({
     onToggleFavourite,
     onShare,
     onColorChange,
-    onDeleteStatus
+    onDeleteStatus,
 }) {
     const { setNodeRef } = useDroppable({
         id: col.id
@@ -35,15 +35,15 @@ export default function NoteColumn({
         done: `${isDark ? 'text-green-700' : 'text-green-600'}`,
 
     };
-    const [expanded, setExpanded] = useState('');
+    // const [expanded, setExpanded] = useState('');
 
-    const handleExpansion = (panel) => (event, newExpanded) => {
-        setExpanded(newExpanded ? panel : false);
-    };
+    // const handleExpansion = (panel) => (event, newExpanded) => {
+    //     setExpanded(newExpanded ? panel : false);
+    // };
 
 
     return (
-        <div ref={setNodeRef} className={`p-4 ${isDark ? 'bg-gray-900' : 'bg-gray-100'} rounded-lg  w-full md:w-65 h-145`}>
+        <div ref={setNodeRef} className={`p-4 ${isDark ? 'bg-gray-900' : 'bg-gray-100'} rounded-lg  w-full md:w-65 h-auto`}>
             {/* Desktop View */}
             <div  className="hidden md:flex md:flex-col gap-4">
                 <div className="flex items-center justify-between mb-4 group">
@@ -66,6 +66,7 @@ export default function NoteColumn({
                                     onToggleFavourite={onToggleFavourite}
                                     onShare={onShare}
                                     onColorChange={onColorChange}
+                                    
                                 />
                             </div>
                         );
