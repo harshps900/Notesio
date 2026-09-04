@@ -17,17 +17,29 @@ const server = http.createServer(app);
 const allowedOrigins = [
     process.env.CLIENT_URL,
     "http://localhost:5173",
-    "http://localhost:3000"
+    "http://localhost:3000",
+    "http://localhost:4000"
 ].filter(Boolean);
+
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps, curl, postman) or matching origins
+        if (!origin || allowedOrigins.includes(origin) || true) {
+            callback(null, true);
+        } else {
+            callback(null, true);
+        }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+    credentials: true,
+    optionsSuccessStatus: 200
+};
 
 const io = new Server(server, {
     cors: {
         origin: function (origin, callback) {
-            if (!origin || allowedOrigins.includes(origin)) {
-                callback(null, true);
-            } else {
-                callback(null, true); // Allow requests during production deployment
-            }
+            callback(null, true);
         },
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
         credentials: true
@@ -45,16 +57,16 @@ if (!fs.existsSync(uploadsDir)) {
 
 const PORT = process.env.PORT || 4000;
 
-app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(null, true);
-        }
-    },
-    credentials: true
-}));
+// Allow Chrome/Edge Private Network Access preflights (http://localhost accessed from public HTTPS sites)
+app.use((req, res, next) => {
+    if (req.headers['access-control-request-private-network']) {
+        res.setHeader('Access-Control-Allow-Private-Network', 'true');
+    }
+    next();
+});
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
