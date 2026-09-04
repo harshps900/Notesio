@@ -8,6 +8,7 @@ import { useDraggable } from "@dnd-kit/core";
 import color from '../assets/color.png'
 import DownloadFile from "./DownloadFile";
 import { PDFDownloadLink } from "@react-pdf/renderer";
+import { API_BASE_URL } from "../config";
 
 
 export default function NoteCard({ note, onEdit, onDelete, onShare, onToggleFavourite, onColorChange, permission = null, noteDetail }) {
@@ -266,7 +267,7 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onToggleFavo
                 {/* Image */}
                 {note.imageUrl && (
                     <img
-                        src={`http://localhost:4000${note.imageUrl}`}
+                        src={`${API_BASE_URL}${note.imageUrl}`}
                         alt={note.title}
                         className="hidden my-2 rounded-lg object-cover max-h-48 w-full cursor-pointer"
                         onClick={(e) => {

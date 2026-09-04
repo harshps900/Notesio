@@ -1,4 +1,6 @@
 import { Page, Text, View, Document, StyleSheet, Font, Image } from '@react-pdf/renderer';
+import { API_BASE_URL } from '../config';
+
 export default function DownloadFile({ note }) {
     const styles = StyleSheet.create({
         page: {
@@ -61,7 +63,7 @@ export default function DownloadFile({ note }) {
         }
     });
 
-    const fullImageUrl = note.imageUrl ? `http://localhost:4000${note.imageUrl}` : null;
+    const fullImageUrl = note.imageUrl ? `${API_BASE_URL}${note.imageUrl}` : null;
 
     return (
         <Document title={note.title}>

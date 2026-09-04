@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEllipsisVertical, faPencil, faTrash, faShareNodes, faEye, faClock, faStar, faPause, faPlay, faStop } from "@fortawesome/free-solid-svg-icons";
 import { useTheme } from "../Context/ThemeProvider";
+import { API_BASE_URL } from "../config";
 import { format, isToday, isYesterday } from 'date-fns';
 import Speech from 'react-text-to-speech'
 export default function DisplayNotes({ note, onClose }) {
@@ -93,7 +94,7 @@ export default function DisplayNotes({ note, onClose }) {
                 <p className="text-justify ">{note.description || (note.content && note.content[0]?`${note.content[0].substring(8,)}`: 'No content provided.')}</p>
             </div>
             {note.imageUrl && (
-                <img src={`http://localhost:4000${note.imageUrl}`} alt={note.title} draggable="false" className="mb-4 rounded-lg object-cover max-h-[30%] max-w-[60%] items-center" />
+                <img src={`${API_BASE_URL}${note.imageUrl}`} alt={note.title} draggable="false" className="mb-4 rounded-lg object-cover max-h-[30%] max-w-[60%] items-center" />
             )}
             <div className={`mt-auto pt-3 border-t flex justify-between items-center text-xs  ${isDark ? 'text-gray-100 border-t-gray-500' : 'text-gray-800 border-t-gray-500'}`}>
                 <span>Last updated: {formatDate(note.updatedAt || note.createdAt)}</span>

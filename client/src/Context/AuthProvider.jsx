@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { ToastContainer, toast } from 'react-toastify'
 import axios from "axios";
+import { API_BASE_URL } from "../config";
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
@@ -26,7 +27,7 @@ export default function AuthProvider({ children }) {
         if (!token) return;
 
         try {
-            const res = await axios.get("http://localhost:4000/api/auth/users", {
+            const res = await axios.get(`${API_BASE_URL}/api/auth/users`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -65,7 +66,7 @@ export default function AuthProvider({ children }) {
 
     const RegisterUser = async (data) => {
         try {
-            const res = await axios.post(`http://localhost:4000/api/auth/register`, data, {
+            const res = await axios.post(`${API_BASE_URL}/api/auth/register`, data, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
@@ -90,7 +91,7 @@ export default function AuthProvider({ children }) {
     // console.log('hiii',user)
     const LoginUser = async (data) => {
         try {
-            const res = await axios.post(`http://localhost:4000/api/auth/login`, data, {
+            const res = await axios.post(`${API_BASE_URL}/api/auth/login`, data, {
                 withCredentials: true,
             });
             if (res.data.success) {
@@ -120,7 +121,7 @@ export default function AuthProvider({ children }) {
             const token = localStorage.getItem("token");
             if (token) {
                 await axios.post(
-                    "http://localhost:4000/api/auth/logout",
+                    `${API_BASE_URL}/api/auth/logout`,
                     {},
                     {
                         headers: { Authorization: `Bearer ${token}` },

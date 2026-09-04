@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEllipsisVertical, faPencil, faTrash, faShareNodes, faEye, faClock, faEdit } from "@fortawesome/free-solid-svg-icons";
 import { format, isToday, isYesterday } from 'date-fns';
 import { useTheme } from "../Context/ThemeProvider";
+import { API_BASE_URL } from "../config";
 
 export default function FavNote({ note, onEdit, onDelete, onShare, permission = null, noteDetail }) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -123,7 +124,7 @@ export default function FavNote({ note, onEdit, onDelete, onShare, permission = 
                         </p>
                     </div>
                     {note.imageUrl && (
-                        <img src={`http://localhost:4000${note.imageUrl}`} alt={note.title} className="my-3 hidden rounded-lg object-cover max-h-48 w-full" />
+                        <img src={`${API_BASE_URL}${note.imageUrl}`} alt={note.title} className="my-3 hidden rounded-lg object-cover max-h-48 w-full" />
                     )}
                     {/* Note content */}
 

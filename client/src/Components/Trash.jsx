@@ -7,6 +7,7 @@ import swal from "sweetalert";
 import { format, isToday, isYesterday } from 'date-fns';
 import { useTheme } from "../Context/ThemeProvider";
 import trashp from '../assets/trashp.png'
+import { API_BASE_URL } from "../config";
 
 export default function Trash({ onNoteRestored }) {
     const [trash, setTrash] = useState([]);
@@ -16,7 +17,7 @@ export default function Trash({ onNoteRestored }) {
     useEffect(() => {
         const fetchTrashData = async () => {
             try {
-                const { data } = await axios.get(`http://localhost:4000/api/notes/trash`, {
+                const { data } = await axios.get(`${API_BASE_URL}/api/notes/trash`, {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem("token")}`,
                     },
@@ -42,7 +43,7 @@ export default function Trash({ onNoteRestored }) {
             }).then(async (willDelete) => {
                 if (!willDelete) return; {
                     const res = await axios.delete(
-                        `http://localhost:4000/api/notes/delete/${id}`,
+                        `${API_BASE_URL}/api/notes/delete/${id}`,
                         {
                             headers: {
                                 "Content-Type": "application/json",
@@ -65,7 +66,7 @@ export default function Trash({ onNoteRestored }) {
     const onRestore = async (id) => {
         try {
             const res = await axios.post(
-                `http://localhost:4000/api/notes/restore/${id}`,
+                `${API_BASE_URL}/api/notes/restore/${id}`,
                 {},
                 {
                     headers: {
@@ -126,7 +127,7 @@ export default function Trash({ onNoteRestored }) {
                 buttons: ["Cancel", "Yes"],
             }).then(async (willDelete) => {
                 if (!willDelete) return; {
-                    const res = await axios.delete(`http://localhost:4000/api/notes/deleteAll`, {
+                    const res = await axios.delete(`${API_BASE_URL}/api/notes/deleteAll`, {
                         headers: {
                             "Content-Type": "application/json",
                             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -162,7 +163,7 @@ export default function Trash({ onNoteRestored }) {
                                     <h3 className={`text-lg font-semibold  line-clamp-2 pr-6 capitalize ${isDark ? 'text-gray-100 ' : 'text-gray-800 '}`}>{note.title||(note.content && note.content[0] ? `${note.content[0].substring(0, 30)}...` : 'Untitled Note')}</h3>
                                     <p className={`text-sm line-clamp-1 leading-relaxed ${isDark ? 'text-gray-100 ' : 'text-gray-800 '}`}>{note.description||(note.content && note.content[0]) || "No content provided."}</p>
                                     {note.imageUrl && (
-                                        <img draggable="false" src={`http://localhost:4000${note.imageUrl}`} alt={note.title} className="my-3 rounded-lg object-cover max-h-48 w-full" />
+                                        <img draggable="false" src={`${API_BASE_URL}${note.imageUrl}`} alt={note.title} className="my-3 rounded-lg object-cover max-h-48 w-full" />
                                     )}
                                 </div>
                                 <div className="mt-auto pt-3 border-t border-white/50 flex justify-between items-center">

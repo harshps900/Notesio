@@ -4,6 +4,7 @@ import { io } from "socket.io-client";
 import { useTheme } from "../Context/ThemeProvider";
 import { DndContext, } from "@dnd-kit/core";
 import axios from "axios";
+import { API_BASE_URL } from "../config";
 import NavBar from "../Components/NavBar";
 import Form from "../Components/ReusableComponents/Form";
 import NoteField from "../Components/ReusableComponents/NoteField";
@@ -109,7 +110,7 @@ export default function MainPage() {
     // fetch notes
     const fetchNotes = async () => {
         try {
-            const { data } = await axios.get("http://localhost:4000/api/notes", {
+            const { data } = await axios.get(`${API_BASE_URL}/api/notes`, {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem("token")}`,
                 },
@@ -128,7 +129,7 @@ export default function MainPage() {
     useEffect(() => {
         const fetchStatuses = async () => {
             try {
-                const { data } = await axios.get("http://localhost:4000/api/notes/statuses", {
+                const { data } = await axios.get(`${API_BASE_URL}/api/notes/statuses`, {
                     headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
                 });
                 if (data.success) {
@@ -152,7 +153,7 @@ export default function MainPage() {
         }
         try {
             const res = await axios.post(
-                "http://localhost:4000/api/notes/create",
+                `${API_BASE_URL}/api/notes/create`,
                 data,
                 {
                     headers: {
@@ -177,7 +178,7 @@ export default function MainPage() {
         }
         try {
             const res = await axios.post(
-                "http://localhost:4000/api/notes/plain",
+                `${API_BASE_URL}/api/notes/plain`,
                 { content: plainNote },
                 {
                     headers: {
@@ -206,7 +207,7 @@ export default function MainPage() {
 
         try {
             const res = await axios.put(
-                `http://localhost:4000/api/notes/edit/${editingPlainNote._id}`,
+                `${API_BASE_URL}/api/notes/edit/${editingPlainNote._id}`,
                 { content: plainNote },
                 {
                     headers: {
@@ -235,7 +236,7 @@ export default function MainPage() {
         try {
             console.log(`Updating note ${noteId} with data:`, updateData);
             const res = await axios.patch(
-                `http://localhost:4000/api/notes/update-details/${noteId}`,
+                `${API_BASE_URL}/api/notes/update-details/${noteId}`,
                 updateData,
                 {
                     headers: {
@@ -269,7 +270,7 @@ export default function MainPage() {
         }
         try {
             const res = await axios.put(
-                `http://localhost:4000/api/notes/edit/${noteId}`,
+                `${API_BASE_URL}/api/notes/edit/${noteId}`,
                 data,
                 {
                     headers: {
@@ -297,7 +298,7 @@ export default function MainPage() {
         setNotes(prev => prev.map(n => n._id === noteId ? { ...n, status: newStatus } : n));
         try {
             await axios.patch(
-                `http://localhost:4000/api/notes/update-details/${noteId}`,
+                `${API_BASE_URL}/api/notes/update-details/${noteId}`,
                 { status: newStatus },
                 {
                     headers: {
@@ -329,7 +330,7 @@ export default function MainPage() {
             }).then(async (willDelete) => {
                 if (!willDelete) return; {
                     const res = await axios.post(
-                        `http://localhost:4000/api/notes/SoftDelete/${id}`,
+                        `${API_BASE_URL}/api/notes/SoftDelete/${id}`,
                         {},
                         {
                             headers: {
@@ -375,7 +376,7 @@ export default function MainPage() {
             if (!willShare) return;
             if (!shareModal.note) return showToast("No note selected to share", "warning");
             const res = await axios.post(
-                `http://localhost:4000/api/notes/share/${shareModal.note._id}`,
+                `${API_BASE_URL}/api/notes/share/${shareModal.note._id}`,
                 { email: shareEmail, permission: sharePermission },
                 { headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` } }
             );
@@ -397,7 +398,7 @@ export default function MainPage() {
     useEffect(() => {
         if (!user?._id) return;
         // create socket and store in ref
-        const socket = io("http://localhost:4000", {
+        const socket = io(API_BASE_URL, {
             auth: { token: localStorage.getItem("token") },
         });
         socketRef.current = socket;
@@ -496,7 +497,7 @@ export default function MainPage() {
             return showToast("Column name cannot be empty.", "warning");
         }
         try {
-            const res = await axios.post("http://localhost:4000/api/notes/statuses",
+            const res = await axios.post(`${API_BASE_URL}/api/notes/statuses`,
                 { name: name },
                 { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
             );
@@ -522,7 +523,7 @@ export default function MainPage() {
                 buttons: ["Cancel", "Yes"],
             }).then(async (willDelete) => {
                 if (!willDelete) return; {
-                    const res = await axios.delete(`http://localhost:4000/api/notes/statuses/${id}`,
+                    const res = await axios.delete(`${API_BASE_URL}/api/notes/statuses/${id}`,
                         {
                             headers: {
                                 "Content-Type": "application/json",

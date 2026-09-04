@@ -3,8 +3,9 @@ import NavBar from "../../Components/NavBar"
 import UserSideBar from "../../Components/UserSideBar"
 import { useTheme } from "../../Context/ThemeProvider"
 import axios from "axios"
+import { API_BASE_URL as BASE_URL } from "../../config"
 
-const API_BASE_URL = "http://localhost:4000/api";
+const API_BASE_URL = `${BASE_URL}/api`;
 
 export default function UserDashboard() {
     const { isDark } = useTheme()
