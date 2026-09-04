@@ -29,10 +29,10 @@ export default function Form({ fields, buttonText, onSubmit, buttonClassName, in
                 className="w-full   mx-auto  justify-end    px-2 py-2  ">
                 <form
                     onSubmit={handleSubmit(handleFormData)}
-                    className="space-y-2 h-auto">
+                    className="space-y-4">
                     {fields.map((field) => (
-                        <div key={field.name} >
-                            <label htmlFor={field.name} className={`block text-sm font-medium    mb-1 ${isDark ? 'text-gray-100' : 'text-gray-800'} }`}>
+                        <div key={field.name} className="text-left space-y-1.5">
+                            <label htmlFor={field.name} className={`block text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                                 {field.label}
                             </label>
                             {field.type === "textarea" ? (
@@ -40,13 +40,13 @@ export default function Form({ fields, buttonText, onSubmit, buttonClassName, in
                                     id={field.name}
                                     placeholder={field.placeholder}
                                     rows={field.rows || 4}
-                                    className={`w-full  px-4 py-3  border rounded-lg 
-                                        ${isDark ? 'text-gray-100 bg-gray-800' : 'text-gray-800 bg-white border'}
-                                                    focus:outline-none focus:ring-2 placeholder-gray-400 
-                                                        ${errors[field.name]
-                                            ? 'border-red-500 focus:ring-red-300'
-                                            : 'border-gray-300 focus:ring-indigo-400'
-                                        }`}
+                                    className={`w-full px-4 py-3 rounded-xl border text-sm transition-all duration-200 focus:outline-none focus:ring-2 placeholder-slate-400 ${
+                                        isDark ? 'text-slate-100 bg-slate-800/80 border-slate-700' : 'text-slate-900 bg-slate-50 border-slate-200'
+                                    } ${
+                                        errors[field.name]
+                                            ? 'border-rose-500 focus:ring-rose-400'
+                                            : 'focus:border-indigo-500 focus:ring-indigo-500/20'
+                                    }`}
                                     {...register(field.name, field.validation)}
                                     aria-invalid={errors[field.name] ? "true" : "false"}
                                 />
@@ -54,14 +54,13 @@ export default function Form({ fields, buttonText, onSubmit, buttonClassName, in
                                 <input
                                     type={field.type}
                                     id={field.name}
-                                    className={`w-full  px-4 py-3 border  rounded-lg 
-                                            focus:outline-none focus:ring-2 placeholder-gray-400 
-                                            ${isDark ? 'text-gray-100 bg-gray-800' : 'text-gray-800 bg-white border'}
-                                        }
-                                                        ${errors[field.name]
-                                            ? 'border-red-500 focus:ring-red-300'
-                                            : 'border-gray-300 focus:ring-indigo-400'
-                                        }`}
+                                    className={`w-full px-4 py-3 rounded-xl border text-sm transition-all duration-200 focus:outline-none focus:ring-2 placeholder-slate-400 ${
+                                        isDark ? 'text-slate-100 bg-slate-800/80 border-slate-700' : 'text-slate-900 bg-slate-50 border-slate-200'
+                                    } ${
+                                        errors[field.name]
+                                            ? 'border-rose-500 focus:ring-rose-400'
+                                            : 'focus:border-indigo-500 focus:ring-indigo-500/20'
+                                    }`}
                                     {...register(field.name, field.validation)}
                                     aria-invalid={errors[field.name] ? "true" : "false"}
                                 />
@@ -71,25 +70,26 @@ export default function Form({ fields, buttonText, onSubmit, buttonClassName, in
                                     id={field.name}
                                     autoComplete="off"
                                     placeholder={field.placeholder}
-                                    className={`w-full  px-4 py-3  border rounded-lg 
-                                            focus:outline-none focus:ring-2 placeholder-gray-400 
-                                            ${isDark ? 'text-gray-100 bg-gray-800' : 'text-gray-800 bg-white border'}
-                                                        ${errors[field.name]
-                                            ? 'border-red-500 focus:ring-red-300'
-                                            : 'border-gray-300 focus:ring-indigo-400'
-                                        }`}
+                                    className={`w-full px-4 py-3 rounded-xl border text-sm transition-all duration-200 focus:outline-none focus:ring-2 placeholder-slate-400 ${
+                                        isDark ? 'text-slate-100 bg-slate-800/80 border-slate-700' : 'text-slate-900 bg-slate-50 border-slate-200'
+                                    } ${
+                                        errors[field.name]
+                                            ? 'border-rose-500 focus:ring-rose-400'
+                                            : 'focus:border-indigo-500 focus:ring-indigo-500/20'
+                                    }`}
                                     {...register(field.name, field.validation)}
                                     aria-invalid={errors[field.name] ? "true" : "false"}
-                                />)}
+                                />
+                            )}
                             {errors[field.name] && (
-                                <p className="mt-1 text-sm text-red-600">{errors[field.name].message}</p>
+                                <p className="text-xs font-semibold text-rose-500 pt-0.5">{errors[field.name].message}</p>
                             )}
                         </div>
                     ))}
-                    <div >
+                    <div className="pt-2">
                         <button
                             type="submit"
-                            className={`w-full py-3 px-6 rounded-lg font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${buttonClassName}`}
+                            className={`w-full py-3.5 px-6 rounded-xl font-semibold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${buttonClassName}`}
                         >
                             {buttonText}
                         </button>
