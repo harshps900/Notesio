@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "start": "cd server && node server.js"
+  },
   "dependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^24.6.0",
