@@ -14,7 +14,8 @@ export const middleware = async (req, res, next) => {
         if (!token || token === "undefined" || token === "null") {
             return res.status(401).json({ success: false, message: 'Unauthorized access: No valid token provided.' });
         }
-        const decoded = jwt.verify(token, process.env.SECRET_KEY);
+        const secretKey = process.env.SECRET_KEY || "Secret#text";
+        const decoded = jwt.verify(token, secretKey);
         if (!decoded) {
             return res.status(401).json({ success: false, message: 'Unauthorized access: Invalid token.' });
         }

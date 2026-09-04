@@ -18,10 +18,10 @@ export const registerUser = async (req, res) => {
         }
         const hashedPassword = await bcrypt.hash(password, 10)
         const newUser = await User.create({ name, email, password: hashedPassword })
-        // token creation now
+        const secretKey = process.env.SECRET_KEY || "Secret#text";
         const token = jwt.sign(
             { id: newUser._id },
-            process.env.SECRET_KEY,
+            secretKey,
             { expiresIn: '7d' }
         );
         const userResponse = {
@@ -32,8 +32,11 @@ export const registerUser = async (req, res) => {
         };
         return res.json({ success: true, message: "User registered successfully", user:userResponse });
     } catch (error) {
-        console.log(error)
-        return res.status(500).json({ success: false, message: "Server error during registration." });
+        console.error("Error in registerUser:", error);
+        return res.status(500).json({ 
+            success: false, 
+            message: error.message || "Server error during registration." 
+        });
     }
 }
 // login controller
@@ -52,7 +55,8 @@ export const loginUser = async (req, res) => {
             return res.status(401).json({ success: false, message: "Invalid credentials" })
         }
 
-        const token = jwt.sign({ id: user._id }, process.env.SECRET_KEY, {
+        const secretKey = process.env.SECRET_KEY || "Secret#text";
+        const token = jwt.sign({ id: user._id }, secretKey, {
             expiresIn: "7d",
         });
         const userResponse = {
@@ -64,8 +68,11 @@ export const loginUser = async (req, res) => {
 
         return res.json({ success: true, message: "User logged in successfully", user: userResponse });
     } catch (error) {
-        console.log(error)
-        return res.status(500).json({ success: false, message: "Server error during login." });
+        console.error("Error in loginUser:", error);
+        return res.status(500).json({ 
+            success: false, 
+            message: error.message || "Server error during login." 
+        });
     }
 }
 

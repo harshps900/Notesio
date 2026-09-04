@@ -11,7 +11,7 @@ build/
 # Environment variables & sensitive config
 .env
 server/.env
-client/.env
+client/.env 
 *.env.local
 
 # IDE and OS files
