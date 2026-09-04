@@ -116,4 +116,23 @@ io.on('error', handleServerError);
 server.on('error', handleServerError);
 server.listen(PORT, () => {
     console.log(`HTTP and WebSocket server running on http://localhost:${PORT}`);
+    
+    // Keep-Alive Self-Ping Worker (Prevents free Render/Railway instances from sleeping)
+    const keepAliveUrl = process.env.RENDER_EXTERNAL_URL || process.env.BACKEND_URL;
+    if (keepAliveUrl) {
+        const PING_INTERVAL = 14 * 60 * 1000; // 14 minutes
+        setInterval(async () => {
+            try {
+                const protocol = keepAliveUrl.startsWith("https") ? await import("https") : await import("http");
+                protocol.default.get(keepAliveUrl, (res) => {
+                    console.log(`[Keep-Alive Ping] Server kept awake! Status: ${res.statusCode} at ${new Date().toLocaleTimeString()}`);
+                }).on("error", (err) => {
+                    console.error("[Keep-Alive Ping Error]:", err.message);
+                });
+            } catch (err) {
+                console.error("[Keep-Alive Ping Exception]:", err.message);
+            }
+        }, PING_INTERVAL);
+        console.log(`⚡ Keep-Alive ping worker initialized for: ${keepAliveUrl}`);
+    }
 });
