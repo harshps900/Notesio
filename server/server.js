@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url';
 import path from "path";
 dotEnv.config();
 import data from './Config/data.js';
+// Server entry point - Railway watched path deployment trigger
 import authRouter from "./Routes/authRouter.js";
 import noteRouter from './Routes/noteRouter.js'
 
