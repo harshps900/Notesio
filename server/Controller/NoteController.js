@@ -70,9 +70,9 @@ export const editNote = async (req, res) => {
     if (priority !== undefined) updateData.priority = priority;
     if (status !== undefined) updateData.status = status;
     // if (tags !== undefined) updateData.tags = tags;
-    const plainTitle = content.substring(0, content.indexOf('\n') !== -1 ? content.indexOf('\n') : content.length).trim() || 'Untitled Note';
-    const plainDescription = content.substring(content.indexOf('\n') + 1).trim() || '';
-    if (!title && content) {
+    if (!title && content && typeof content === 'string') {
+        const plainTitle = content.substring(0, content.indexOf('\n') !== -1 ? content.indexOf('\n') : content.length).trim() || 'Untitled Note';
+        const plainDescription = content.substring(content.indexOf('\n') + 1).trim() || '';
         updateData.title = plainTitle;
         updateData.description = plainDescription;
     }

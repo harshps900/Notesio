@@ -13,12 +13,17 @@ import { PDFDownloadLink } from "@react-pdf/renderer";
 export default function NoteCard({ note, onEdit, onDelete, onShare, onToggleFavourite, onColorChange, permission = null, noteDetail }) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+    const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
     const menuRef = useRef(null);
+    const buttonRef = useRef(null);
     const { isDark } = useTheme();
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (menuRef.current && !menuRef.current.contains(event.target)) {
+            if (
+                menuRef.current && !menuRef.current.contains(event.target) &&
+                buttonRef.current && !buttonRef.current.contains(event.target)
+            ) {
                 setIsMenuOpen(false);
                 setIsColorPickerOpen(false);
             }
@@ -27,7 +32,6 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onToggleFavo
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-
     }, []);
 
     const generateColorForId = (id) => {
@@ -89,6 +93,13 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onToggleFavo
     // Handle click events to prevent propagation to drag listeners
     const handleMenuClick = (e) => {
         e.stopPropagation();
+        if (!isMenuOpen && buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            setMenuPosition({
+                top: rect.bottom + 4,
+                left: Math.max(10, rect.right - 160),
+            });
+        }
         setIsMenuOpen((prev) => !prev);
     };
 
@@ -134,9 +145,7 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onToggleFavo
                 >
                     {note.title || (note.content && note.content[0] ? `${note.content[0].substring(0, 30)}...` : 'Untitled Note')}
                 </h2>
-                <div
-                    ref={menuRef}
-                    className="relative flex">
+                <div className="relative flex">
                     {/* Custom color picker */}
                     
                         <div className="relative mr-2 ">
@@ -173,6 +182,7 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onToggleFavo
                         </div>
                     
                     <button
+                        ref={buttonRef}
                         className={`p-1.5 rounded-full ${isDark ? 'text-gray-100 hover:bg-white/20 hover:text-gray-100' : 'text-gray-200 hover:bg-white/50 hover:text-gray-700'} transition-colors`}
                         onClick={handleMenuClick}
                         aria-label="Note options"
@@ -180,7 +190,14 @@ export default function NoteCard({ note, onEdit, onDelete, onShare, onToggleFavo
                         <FontAwesomeIcon icon={faEllipsisVertical} size="sm" />
                     </button>
                     {isMenuOpen && (
-                        <div className={`absolute top-8 right-0 shadow-lg rounded-lg z-10 w-40 py-1 border ${isDark ? 'bg-gray-800 text-gray-100 border-gray-500' : 'bg-white text-gray-800 border-gray-50'}`}>
+                        <div
+                            ref={menuRef}
+                            className={`fixed shadow-2xl rounded-xl z-[100] w-40 py-1.5 border transition-all ${isDark ? 'bg-slate-800 text-slate-100 border-slate-700' : 'bg-white text-slate-800 border-slate-200'}`}
+                            style={{
+                                top: `${menuPosition.top}px`,
+                                left: `${menuPosition.left}px`,
+                            }}
+                        >
                             <button
                                 onClick={(e) => handleMenuItemClick(e, () => canEdit && onEdit(note))}
                                 disabled={!canEdit}

@@ -40,8 +40,9 @@ export default function AuthProvider({ children }) {
     useEffect(() => {
         const storedUser = localStorage.getItem("user");
         const storedLogin = localStorage.getItem("isLoggedIn");
+        const storedToken = localStorage.getItem("token");
 
-        if (storedUser && storedLogin === "true") {
+        if (storedUser && storedLogin === "true" && storedToken) {
             try {
                 setUser(JSON.parse(storedUser));
                 setIsLoggedIn(true);
@@ -49,8 +50,15 @@ export default function AuthProvider({ children }) {
             } catch (error) {
                 console.error("Failed to parse user data", error);
                 localStorage.removeItem("user");
+                localStorage.removeItem("token");
                 localStorage.removeItem("isLoggedIn");
             }
+        } else {
+            localStorage.removeItem("user");
+            localStorage.removeItem("token");
+            localStorage.removeItem("isLoggedIn");
+            setIsLoggedIn(false);
+            setUser(null);
         }
         setLoading(false);
     }, []);
@@ -107,33 +115,31 @@ export default function AuthProvider({ children }) {
         }
     };
 
-const logout = async () => {
-    try {
-        const token = localStorage.getItem("token");
-
-        await axios.post(
-            "http://localhost:4000/api/auth/logout",
-            {}, // no body needed
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-                withCredentials: true, // keep if you’re also using cookies
+    const logout = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            if (token) {
+                await axios.post(
+                    "http://localhost:4000/api/auth/logout",
+                    {},
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                        withCredentials: true,
+                    }
+                );
             }
-        );  
-        console.log(axios)
-        setIsLoggedIn(false);
-        setUser(null);
-        setAllUsers([]);
-        localStorage.removeItem("user");
-        localStorage.removeItem("token");
-        localStorage.removeItem("isLoggedIn");
-        showToast("Logged out successfully", "info");
-    } catch (err) {
-        console.error("Logout failed:", err);
-        showToast("Logout failed", "error");
-    }
-};
+        } catch (err) {
+            console.error("Logout request error (clearing session anyway):", err);
+        } finally {
+            setIsLoggedIn(false);
+            setUser(null);
+            setAllUsers([]);
+            localStorage.removeItem("user");
+            localStorage.removeItem("token");
+            localStorage.removeItem("isLoggedIn");
+            showToast("Logged out successfully", "info");
+        }
+    };
 
 
     const value = { isLoggedIn, isRegistered, user, allUsers, loading, showToast, RegisterUser, LoginUser, logout };

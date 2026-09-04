@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { ComposableMap, Geographies, Geography, ZoomableGroup, Marker, zoomIn, zoomOut, } from 'react-simple-maps';
-import Drawer from '../Drawer1';
+import Drawer from './Drawer1';
 import { Tooltip as ReactTooltip } from "react-tooltip";
 import SideBar from '../../Components/SideBar';
 import {

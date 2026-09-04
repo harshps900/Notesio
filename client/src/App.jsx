@@ -5,10 +5,10 @@ import Login from './Components/Login'
 import Register from './Components/Register'
 import ProtectedRoute from './Components/ProtectedRoute'
 import PublicRoute from './Components/PublicRoute'
-import UserDashboard from './Pages/UserDashboard'
+import UserDashboard from './Pages/Dashboard/UserDashboard'
 import LandingPage from './Pages/LandingPage'
-import DashBoard from './Pages/DashBoardFile/DashBoard'
-import Dashboard2 from './Pages/Dashboard2'
+import DashBoard from './Pages/Dashboard/DashBoard'
+import Dashboard2 from './Pages/Dashboard/Dashboard2'
 // import Test from './Pages/Test.tsx'
 function App() {
 
@@ -17,15 +17,17 @@ function App() {
       <ErrorBoundaries>
         <BrowserRouter>
           <Routes>
-            <Route path='/Notesio' element={
-              <ProtectedRoute>
-                <MainPage />
-              </ProtectedRoute>
+            {/* Public Root Landing Page */}
+            <Route path='/' element={
+              <PublicRoute>
+                <LandingPage />
+              </PublicRoute>
             } />
-            <Route path='/UserDashboard' element={
-              <ProtectedRoute>
-                <UserDashboard />
-              </ProtectedRoute>} />
+            <Route path='/LandingPage' element={
+              <PublicRoute>
+                <LandingPage />
+              </PublicRoute>
+            } />
             <Route path='/login' element={
               <PublicRoute>
                 <Login />
@@ -36,29 +38,28 @@ function App() {
                 <Register />
               </PublicRoute>
             } />
-              <Route path='/LandingPage'element={
-                <ProtectedRoute>
-                  <LandingPage/>
-                </ProtectedRoute>
-              } />
-              <Route path='/Dashboard'element={
-                <ProtectedRoute>
-                  <DashBoard/>
-                </ProtectedRoute>
-                
-              } />
-              <Route path='/Dashboard2'element={
-                <ProtectedRoute>
-                  <Dashboard2/>
-                </ProtectedRoute>
-                
-              } />
-              {/* <Route path='/Test' element={
-                <ProtectedRoute>
-                  <Test/>
-                  </ProtectedRoute>
-              }/> */}
-              
+
+            {/* Protected Application Workspace Routes */}
+            <Route path='/Notesio' element={
+              <ProtectedRoute>
+                <MainPage />
+              </ProtectedRoute>
+            } />
+            <Route path='/UserDashboard' element={
+              <ProtectedRoute>
+                <UserDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path='/Dashboard' element={
+              <ProtectedRoute>
+                <DashBoard />
+              </ProtectedRoute>
+            } />
+            <Route path='/Dashboard2' element={
+              <ProtectedRoute>
+                <Dashboard2 />
+              </ProtectedRoute>
+            } />
           </Routes>
         </BrowserRouter>
       </ErrorBoundaries>

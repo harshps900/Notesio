@@ -115,7 +115,19 @@ export default function LandingPage() {
                         Contact Us
                     </button>
                 </div>
-                <div className="order-2 md:order-3">
+                <div className="order-2 md:order-3 flex items-center gap-3">
+                    <button
+                        onClick={() => navigate('/login')}
+                        className={`px-4 py-2 text-sm font-semibold rounded-xl transition-colors cursor-pointer ${isDark ? 'text-slate-200 hover:text-white' : 'text-indigo-600 hover:text-indigo-800'}`}
+                    >
+                        Log In
+                    </button>
+                    <button
+                        onClick={() => navigate('/register')}
+                        className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md transition-all cursor-pointer"
+                    >
+                        Sign Up
+                    </button>
                     <FormGroup>
                         <FormControlLabel
                             control={<MaterialUISwitch

@@ -16,7 +16,7 @@ import {
     Marker,
 } from 'react-simple-maps';
 import { scaleLinear } from 'd3-scale';
-import SideBar from "../Components/SideBar";
+import SideBar from "../../Components/SideBar";
 
 Chart.register(...registerables);
 

@@ -16,7 +16,8 @@ import DisplayNotes from "../Components/DisplayNotes";
 import NoteColumn from '../Components/NoteColumn'
 import NoteStatus from "../Components/ReusableComponents/StatusField";
 import Editor from "../Components/Editor";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { Plus, FileText, FolderPlus, Sparkles, X, Share2, Star, Trash2 } from "lucide-react";
 
 
 export default function MainPage() {
@@ -548,29 +549,40 @@ export default function MainPage() {
     };
 
     return (
-        <div className={`w-full  md:fixed h-screen flex flex-col ${isDark ? ' bg-gray-800' : 'bg-white'}`}>
+        <div className={`w-full md:fixed h-screen flex flex-col transition-colors duration-300 ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
             <NavBar searchterm={searchterm} setSearchTerm={setSearchTerm} menu={toggleMenu} />
-            <div className="flex flex-1  ">
-                {/* sidebar */}
-                <aside className="   hidden md:block">
+            <div className="flex flex-1 overflow-hidden">
+                {/* Sidebar */}
+                <aside className="hidden md:block border-r border-slate-200/60 dark:border-slate-800/80">
                     <SideBar
                         toggleHome={toggleHome} isHomeCLick={isHomeCLick}
                         toggleFavourites={toggleFavourites} isFavouritesClick={isFavouritesClick}
                         toggleTrash={toggleTrash} isTrashClick={isTrashClick}
                     />
                 </aside>
-                <div className=" flex-1  overflow-y-auto ">
+
+                {/* Main Content Workspace */}
+                <main className="flex-1 overflow-y-auto p-4 md:p-8">
                     {isHomeCLick && (
-                        <>
-                            <div className=' p-6 md:p-4 h-screen'>
-                                <div className="flex justify-between  items-center mb-6">
-                                    <h1 className={`text-2xl ${isDark ? 'text-gray-100' : 'text-gray-800'} font-bold `}>Home</h1>
-                                    <button onClick={() => { toggleCol() }} className={` rounded-2xl cursor-pointer p-2  font-serif ${isDark ? 'text-gray-100 hover:bg-gray-900 ' : 'text-gray-800 hover:bg-indigo-600 hover:text-gray-50'}`}>Create Status</button>
+                        <div className="max-w-7xl mx-auto min-h-full flex flex-col">
+                            {/* Workspace Top Header */}
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 pb-4 border-b border-slate-200/60 dark:border-slate-800/80">
+                                <div>
+                                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
+                                        Home Workspace
+                                    </h1>
+                                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                        Organize notes across status columns, drag and drop tasks, and collaborate live.
+                                    </p>
                                 </div>
-                                <div className='flex  gap-2 flex-wrap  '>
-                                    <DndContext onDragEnd={handleDragEnd}>
-                                        {filteredNotes.length > 0 ? (
-                                            noteColumns.map((col) => (
+                            </div>
+
+                            {/* Kanban / Notes Grid */}
+                            <div className="flex-1">
+                                <DndContext onDragEnd={handleDragEnd}>
+                                    {filteredNotes.length > 0 ? (
+                                        <div className="flex gap-6 overflow-x-auto pb-6 scrollbar-thin">
+                                            {noteColumns.map((col) => (
                                                 <NoteColumn
                                                     key={col.id}
                                                     col={col}
@@ -583,50 +595,71 @@ export default function MainPage() {
                                                     onShare={(e, n) => { e.stopPropagation(); setShareModal({ open: true, note: n }); }}
                                                     onColorChange={handleColorChange}
                                                     onDeleteStatus={handleDeleteStatus}
-
                                                 />
-                                            ))
-                                        ) : (
-                                            <>
-                                                {isHomeCLick && !searchterm && (
-                                                    <div className="flex flex-col items-center justify-center mt-30 ml-30 h-full w-full overflow-hidden">
-                                                        <div className="rounded-full h-62 w-62 bg-indigo-100  ">
-                                                            <img draggable={false} src={noteTa} className="w-62 h-62 " />
-                                                        </div>
-                                                        <div className="flex flex-col text-center justify-center items-center  mt-6 h-full w-full">
-                                                            <p className={`text-2xl ${isDark ? 'text-gray-100' : 'text-gray-800'} font-serif mb-6`}>{searchterm ? "No notes match your search." : "No notes yet. Create one!"}</p>
-                                                            <button onClick={toggleNote} className={`p-2 cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors w-55 `}>Create Note</button>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </>
-                                        )}
-                                    </DndContext>
-                                </div>
+                                            ))}
 
-                                {isColOpen && (
-                                    <div className={`fixed inset-0 z-50 flex items-center justify-center  bg-black/20 backdrop:blur-2xl bg-opacity-40`}>
-                                        <div className={` rounded-2xl shadow-2xl w-full max-w-lg p-6 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-                                            <div className={`flex justify-between items-center border-b ${isDark ? ' border-gray-200 ' : 'border-gray-200'} pb-2 mb-4`}>
-                                                <p className={`text-xl font-semibold  ${isDark ? 'text-gray-100' : 'text-gray-800'} } `}>Create Status</p>
-                                                <button onClick={toggleCol} className={` hover:text-red-500 text-2xl ${isDark ? 'text-gray-100' : 'text-gray-400'}`}>×</button>
-                                            </div>
-                                            <Form
-                                                fields={NoteStatus}
-                                                onSubmit={handleCreateColumn}
-                                                buttonClassName="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md transition-colors "
-                                                buttonText="Create Status"
-                                            />
+                                            {/* Dedicated Add New Column Board Card */}
+                                            <button
+                                                onClick={toggleCol}
+                                                className="w-72 h-48 shrink-0 border-2 border-dashed border-slate-300 dark:border-slate-800 hover:border-indigo-500 dark:hover:border-indigo-500 rounded-2xl flex flex-col items-center justify-center gap-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-100/40 dark:bg-slate-900/40 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-all duration-200 cursor-pointer group"
+                                            >
+                                                <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center transition-colors">
+                                                    <Plus className="w-5 h-5" />
+                                                </div>
+                                                <span className="font-semibold text-sm">Add New Status Column</span>
+                                            </button>
                                         </div>
-                                    </div>
-                                )}
+                                    ) : (
+                                        !searchterm && (
+                                            <div className="flex flex-col items-center justify-center min-h-[55vh] w-full py-12 px-4">
+                                                <div className="relative group mb-6">
+                                                    <div className="absolute -inset-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full blur-xl opacity-30 group-hover:opacity-50 transition duration-500"></div>
+                                                    <div className="relative w-36 h-36 rounded-full bg-gradient-to-br from-indigo-100 to-purple-50 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center p-4 border border-indigo-200/50 dark:border-slate-700 shadow-inner">
+                                                        <img draggable={false} src={noteTa} alt="No Notes" className="w-24 h-24 object-contain filter drop-shadow-md" />
+                                                    </div>
+                                                </div>
+                                                <h3 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2 text-center">
+                                                    Your Workspace is Empty
+                                                </h3>
+                                                <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md text-center mb-8">
+                                                    Capture thoughts, set up status columns, and manage your notes smoothly.
+                                                </p>
+                                                <div className="flex flex-wrap items-center justify-center gap-4">
+                                                    <button
+                                                        onClick={toggleNote}
+                                                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-indigo-600 via-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-lg hover:shadow-indigo-500/25 transition-all duration-200 cursor-pointer"
+                                                    >
+                                                        <Plus className="w-5 h-5" />
+                                                        <span>Create Note</span>
+                                                    </button>
+                                                    <button
+                                                        onClick={toggleCreate}
+                                                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800/60 transition-all duration-200 cursor-pointer"
+                                                    >
+                                                        <FileText className="w-5 h-5" />
+                                                        <span>Quick Note</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )
+                                    )}
+                                </DndContext>
                             </div>
-                        </>
+                        </div>
                     )}
+
+                    {/* Favourites View */}
                     {isFavouritesClick && (
-                        <div className="p-6 w-full">
-                            <h1 className={`text-2xl ${isDark ? 'text-gray-100' : 'text-gray-800'} font-bold mb-6`}>Favourite Notes</h1>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                        <div className="max-w-7xl mx-auto">
+                            <div className="mb-8 pb-4 border-b border-slate-200/60 dark:border-slate-800/80">
+                                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-amber-500 to-amber-600 bg-clip-text text-transparent">
+                                    Favourite Notes
+                                </h1>
+                                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                    Quick access to all notes you've bookmarked as important.
+                                </p>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                 {favouriteNotes.length > 0 ? (
                                     favouriteNotes.map((note) => {
                                         const perm = getPermission(note);
@@ -644,151 +677,248 @@ export default function MainPage() {
                                         );
                                     })
                                 ) : (
-                                    <div className="flex  flex-col  h-screen w-full">
-                                        <div className="flex flex-col items-center ml-80 justify-center h-full w-full">
-                                            <p className={`text-2xl font-serif ${isDark ? 'text-gray-100' : 'text-gray-700'} font-bold mb-6`}>No favourite notes yet.</p>
+                                    <div className="col-span-full flex flex-col items-center justify-center min-h-[50vh] text-center">
+                                        <div className="w-20 h-20 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center justify-center mb-4 text-amber-500">
+                                            <Star className="w-10 h-10 fill-amber-400" />
                                         </div>
+                                        <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-1">
+                                            No favourite notes yet
+                                        </h3>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
+                                            Click the star icon on any note card to pin it to your favourites list.
+                                        </p>
                                     </div>
                                 )}
                             </div>
                         </div>
                     )}
-                    {isTrashClick && (
-                        <Trash onNoteRestored={handleRestore} />
-                    )}
-                </div>
-            </div>
-            {/* Floating Add Button */}
-            <button
-                onClick={toggleNote}
-                className="fixed bottom-8 right-8 cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white text-3xl rounded-full h-14 w-14 flex items-center justify-center shadow-lg transition"
-            >
-                <p className="text-center mb-2">+</p>
-            </button>
-            <button
-                onClick={toggleCreate}
-                className="fixed bottom-8 right-28 cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white text-3xl rounded-full h-14 w-14 flex items-center justify-center shadow-lg transition"
-            >
-                <p className="text-center mb-2">+</p>
-            </button>
-            {isCreateOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center  bg-black/20 backdrop:blur-2xl bg-opacity-40">
-                    <div className={` rounded-2xl shadow-2xl w-full max-w-2xl p-6 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-                        <div className={`flex justify-between items-center border-b ${isDark ? ' border-gray-200 ' : 'border-gray-200'} pb-2 mb-4`}>
-                            <p className={`text-xl font-semibold  ${isDark ? 'text-gray-100' : 'text-gray-800'} `}>
-                                {editingPlainNote ? 'Edit Plain Note' : 'Create Plain Note'}
-                            </p>
-                            <button onClick={toggleCreate} className={` hover:text-red-500 text-2xl ${isDark ? 'text-gray-100' : 'text-gray-400'}`}>×</button>
-                        </div>
-                        <Editor value={plainNote} onChange={setPlainNote} />
-                        <button onClick={editingPlainNote ? handleUpdatePlainNote : handlePlainNoteCreate} className={`w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md transition-colors`}>{editingPlainNote ? 'Update Note' : 'Create Note'}</button>
 
-                    </div>
-                </div>
-            )}
-            {/* Create Note Modal */}
-            {isNoteOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center  bg-black/20 backdrop:blur-2xl bg-opacity-40">
-                    <motion.div
-                        animate={{ y: 10, opacity: 1 }}
-                        initial={{ opacity: 0 }}
-                        whileTap={{ scale: 0.98 }}
-                        transition={{
-                            duration: 0.8,
-                            delay: 0.5
-                        }}
-                        exit={{ opacity: 0 }} className={` rounded-2xl shadow-2xl w-full max-w-lg p-6 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-                        <div className={`flex justify-between items-center border-b ${isDark ? ' border-gray-200 ' : 'border-gray-200'} pb-2 mb-4`}>
-                            <p className={`text-xl font-semibold  ${isDark ? 'text-gray-100' : 'text-gray-800'} } `}>{currentNote ? `Edit Note` : "Create Note"}</p>
-                            <button onClick={toggleNote} className={` hover:text-red-500 text-2xl ${isDark ? 'text-gray-100' : 'text-gray-400'}`}>×</button>
+                    {/* Trash View */}
+                    {isTrashClick && (
+                        <div className="max-w-7xl mx-auto">
+                            <Trash onNoteRestored={handleRestore} />
                         </div>
-                        <Form
-                            fields={NoteField}
-                            onSubmit={(v) => { currentNote ? handleUpdateNote(v, currentNote._id) : handleCreateNote(v); }}
-                            initialValue={currentNote}
-                            buttonClassName="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md transition-colors"
-                            buttonText={currentNote ? "Edit Note" : "Create Note"}
-                        />
-                    </motion.div>
-                </div>
-            )}
+                    )}
+                </main>
+            </div>
+
+            {/* Floating Action Buttons */}
+            <div className="fixed bottom-8 right-8 z-40 flex items-center gap-3">
+                <button
+                    onClick={toggleCreate}
+                    title="Create Quick Note"
+                    className="group relative flex items-center justify-center w-12 h-12 rounded-full bg-slate-800 dark:bg-slate-700 text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
+                >
+                    <FileText className="w-5 h-5" />
+                    <span className="absolute -top-10 scale-0 group-hover:scale-100 transition-all duration-200 px-3 py-1 text-xs font-semibold text-white bg-slate-900 rounded-md shadow-md whitespace-nowrap">
+                        Quick Note
+                    </span>
+                </button>
+                <button
+                    onClick={toggleNote}
+                    title="Create Rich Note"
+                    className="group relative flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-xl hover:shadow-indigo-500/30 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
+                >
+                    <Plus className="w-7 h-7" />
+                    <span className="absolute -top-10 scale-0 group-hover:scale-100 transition-all duration-200 px-3 py-1 text-xs font-semibold text-white bg-slate-900 rounded-md shadow-md whitespace-nowrap">
+                        Create Note
+                    </span>
+                </button>
+            </div>
+
+            {/* Create Status Modal */}
+            <AnimatePresence>
+                {isColOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.2 }}
+                            className={`rounded-2xl shadow-2xl w-full max-w-lg p-6 border ${isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}
+                        >
+                            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3 mb-5">
+                                <h3 className="text-xl font-bold">Create Status Column</h3>
+                                <button onClick={toggleCol} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <Form
+                                fields={NoteStatus}
+                                onSubmit={handleCreateColumn}
+                                buttonClassName="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white py-2.5 px-4 rounded-xl font-semibold transition-all shadow-md mt-2"
+                                buttonText="Create Status"
+                            />
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Create Quick Plain Note Modal */}
+            <AnimatePresence>
+                {isCreateOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.2 }}
+                            className={`rounded-2xl shadow-2xl w-full max-w-2xl p-6 border ${isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}
+                        >
+                            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3 mb-5">
+                                <h3 className="text-xl font-bold">
+                                    {editingPlainNote ? 'Edit Quick Note' : 'Create Quick Note'}
+                                </h3>
+                                <button onClick={toggleCreate} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <Editor value={plainNote} onChange={setPlainNote} />
+                            <button
+                                onClick={editingPlainNote ? handleUpdatePlainNote : handlePlainNoteCreate}
+                                className="w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white py-2.5 px-4 rounded-xl font-semibold transition-all shadow-md cursor-pointer"
+                            >
+                                {editingPlainNote ? 'Update Note' : 'Save Note'}
+                            </button>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Create / Edit Form Note Modal */}
+            <AnimatePresence>
+                {isNoteOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.2 }}
+                            className={`rounded-2xl shadow-2xl w-full max-w-lg p-6 border ${isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}
+                        >
+                            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3 mb-5">
+                                <h3 className="text-xl font-bold">{currentNote ? `Edit Note` : "Create New Note"}</h3>
+                                <button onClick={toggleNote} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <Form
+                                fields={NoteField}
+                                onSubmit={(v) => { currentNote ? handleUpdateNote(v, currentNote._id) : handleCreateNote(v); }}
+                                initialValue={currentNote}
+                                buttonClassName="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white py-2.5 px-4 rounded-xl font-semibold transition-all shadow-md"
+                                buttonText={currentNote ? "Update Note" : "Create Note"}
+                            />
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Note Detail Modal */}
-            {noteDetail && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ y: 10, opacity: 1 }}
-                    transition={{
-                        duration: 0.8,
-                        delay: 0.5
-                    }}
-                    exit={{ opacity: 0 }}
-                    className={`fixed inset-0 z-50 flex  items-center justify-center  `} onClick={() => setNoteDetail(null)}>
-                    <DisplayNotes note={noteDetail} onClose={() => setNoteDetail(null)} />
-                </motion.div>
-            )}
+            <AnimatePresence>
+                {noteDetail && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md" onClick={() => setNoteDetail(null)}>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <DisplayNotes note={noteDetail} onClose={() => setNoteDetail(null)} />
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Share Note Modal */}
-            {shareModal.open && (
-                <div className={`fixed flex items-center justify-center inset-0 z-50 bg-black/20 backdrop:blur-2xl bg-opacity-40  `}>
-                    <div className={` rounded-lg shadow-2xl  w-full max-w-md p-6 ${isDark ? 'bg-gray-700' : 'bg-white'} `}>
-                        <h2 className={`text-lg ${isDark ? 'text-gray-100' : 'text-gray-800'} font-semibold mb-4`}>Share "{shareModal.note?.title || (shareModal.note?.content[0] || 'Untitled')}"</h2>
-                        <input
-                            type="email"
-                            placeholder="Enter user email"
-                            value={shareEmail}
-                            onChange={(e) => setShareEmail(e.target.value)}
-                            className={`w-full border px-3 py-2 rounded-md mb-4 ${isDark ? 'bg-gray-700 text-gray-100' : 'bg-gray-200 text-gray-800'}`}
-                        />
-                        <div className="mb-4">
-                            <p className={`font-medium mb-2 ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>Permission</p>
-                            <div className="flex items-center gap-6">
-                                <label className={`flex items-center gap-2 cursor-pointer ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
-                                    <input
-                                        type="radio"
-                                        name="permission"
-                                        value="view"
-                                        checked={sharePermission === "view"}
-                                        onChange={() => setSharePermission("view")}
-                                    /> View
-                                </label>
-                                <label className={`flex items-center gap-2 cursor-pointer ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
-                                    <input
-                                        type="radio"
-                                        name="permission"
-                                        value="edit"
-                                        checked={sharePermission === "edit"}
-                                        onChange={() => setSharePermission("edit")}
-                                    /> Edit
-                                </label>
+            <AnimatePresence>
+                {shareModal.open && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.2 }}
+                            className={`rounded-2xl shadow-2xl w-full max-w-md p-6 border ${isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}
+                        >
+                            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3 mb-4">
+                                <h3 className="text-lg font-bold flex items-center gap-2">
+                                    <Share2 className="w-5 h-5 text-indigo-500" />
+                                    <span>Share Note</span>
+                                </h3>
+                                <button onClick={() => setShareModal({ open: false, note: null })} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                                    <X className="w-5 h-5" />
+                                </button>
                             </div>
-                        </div>
-                        <div className="flex justify-end gap-3">
-                            <button onClick={() => setShareModal({ open: false, note: null })} className="px-4 py-2 bg-gray-300 rounded-md">Cancel</button>
-                            <button onClick={handleShareNote} className="px-4 py-2 bg-indigo-600 text-white rounded-md">Share</button>
-                        </div>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                                Sharing "{shareModal.note?.title || (shareModal.note?.content?.[0] || 'Untitled Note')}"
+                            </p>
+                            <input
+                                type="email"
+                                placeholder="Enter recipient email address..."
+                                value={shareEmail}
+                                onChange={(e) => setShareEmail(e.target.value)}
+                                className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:ring-2 focus:ring-indigo-500 outline-none mb-4 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-200 text-slate-800'}`}
+                            />
+                            <div className="mb-6">
+                                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                                    Permission Level
+                                </label>
+                                <div className="flex items-center gap-4">
+                                    <label className={`flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl border cursor-pointer text-sm font-medium transition-all ${sharePermission === "view" ? "border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400" : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"}`}>
+                                        <input
+                                            type="radio"
+                                            name="permission"
+                                            value="view"
+                                            checked={sharePermission === "view"}
+                                            onChange={() => setSharePermission("view")}
+                                            className="hidden"
+                                        />
+                                        <span>View Only</span>
+                                    </label>
+                                    <label className={`flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl border cursor-pointer text-sm font-medium transition-all ${sharePermission === "edit" ? "border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400" : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"}`}>
+                                        <input
+                                            type="radio"
+                                            name="permission"
+                                            value="edit"
+                                            checked={sharePermission === "edit"}
+                                            onChange={() => setSharePermission("edit")}
+                                            className="hidden"
+                                        />
+                                        <span>Can Edit</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    onClick={() => setShareModal({ open: false, note: null })}
+                                    className="px-4 py-2 rounded-xl text-sm font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleShareNote}
+                                    className="px-5 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-md transition-all"
+                                >
+                                    Share Note
+                                </button>
+                            </div>
+                        </motion.div>
                     </div>
-                </div>
-            )}
-            {/* Menu for mobile screen */}
+                )}
+            </AnimatePresence>
+
+            {/* Mobile Drawer Menu */}
             {isMenuOpen && (
                 <>
-                    <div className="fixed flex inset-0 z-20">
-                        <div
-                            onClick={() => setIsMenuOpen(false)}
-                            className="fixed inset-0 bg-black/30"
-                        ></div>
-                    </div>
-                    {/* sidebar  drawer*/}
-                    <div onClick={() => setIsMenuOpen(false)} className="absolute top-18 w-64 z-45  bg-white h-full shadow-lg">
+                    <div className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)}></div>
+                    <div className="fixed top-0 left-0 bottom-0 w-72 z-50 bg-white dark:bg-slate-900 shadow-2xl transition-transform duration-300">
                         <SideBar
                             toggleHome={toggleHome} isHomeCLick={isHomeCLick}
                             toggleFavourites={toggleFavourites} isFavouritesClick={isFavouritesClick}
                             toggleTrash={toggleTrash} isTrashClick={isTrashClick}
                             menu={toggleMenu}
-
                         />
-
                     </div>
                 </>
             )}
