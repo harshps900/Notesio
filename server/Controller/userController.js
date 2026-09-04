@@ -1,6 +1,7 @@
 import User from "../Model/userModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 // register controller 
 export const registerUser = async (req, res) => {
@@ -10,6 +11,12 @@ export const registerUser = async (req, res) => {
     }
     if (password !== confirmPassword) {
         return res.status(400).json({ success: false, message: "Password and confirm password does not match" })
+    }
+    if (mongoose.connection.readyState !== 1) {
+        return res.status(503).json({ 
+            success: false, 
+            message: "Database connection unavailable. Please check MONGODB_URI credentials & Network Access (0.0.0.0/0) on MongoDB Atlas." 
+        });
     }
     try {
         const existingUser = await User.findOne({ email })
@@ -44,6 +51,12 @@ export const loginUser = async (req, res) => {
     const { email, password } = req.body
     if (!email || !password) {
         return res.status(400).json({ success: false, message: "All fields are required" })
+    }
+    if (mongoose.connection.readyState !== 1) {
+        return res.status(503).json({ 
+            success: false, 
+            message: "Database connection unavailable. Please check MONGODB_URI credentials & Network Access (0.0.0.0/0) on MongoDB Atlas." 
+        });
     }
     try {
         const user = await User.findOne({ email })
