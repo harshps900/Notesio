@@ -1,7 +1,7 @@
 import express from 'express'
 import { createNote, allNotes, editNote, SoftDeleteNote, shareNote, getTrashNotes, deletePermanently, restoreNote, deleteAllNotes,  updateNoteDetails, createStatus, getStatuses,deleteStatus,createPlainNote } from '../Controller/NoteController.js'
 import { middleware as authMiddleware } from '../middleware/middleware.js'
-import upload from '../Middleware/multer.js';
+import upload from '../middleware/multer.js';
 const noteRouter = express.Router()
 noteRouter.post('/create', authMiddleware, upload.single('image'), createNote)
 noteRouter.get('/', authMiddleware, allNotes)

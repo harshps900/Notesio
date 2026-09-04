@@ -1,5 +1,5 @@
 import Notes from '../Model/NoteModel.js'
-import User from '../Model/UserModel.js';
+import User from '../Model/userModel.js';
 import fs from 'fs';
 import path from 'path';
 import mongoose from 'mongoose';
